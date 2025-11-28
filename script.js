@@ -86,19 +86,28 @@ const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSesKdM0WEwiWoG
 const GOOGLE_SHEET_ID = '1rIYZ100UmTW9IXMGcZ9KdDUn16cqk-jcy4vz4EbMU-k';
 const GOOGLE_SHEETS_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json`;
 
-// Сохранить голос в Google Form
+// Сохранить голос в Google Form (исправленная версия)
 async function saveVoteToGoogleForm(nominationId, studentName) {
     try {
-        const formData = new FormData();
-        formData.append('entry.1754914772', currentUser.name);    // Имя
-        formData.append('entry.12540210', currentUser.email);     // Email  
-        formData.append('entry.1756708600', nominationId);        // Номинация
-        formData.append('entry.2128743791', studentName);         // Студент
+        // Создаем URL с параметрами для Google Forms
+        const formParams = new URLSearchParams({
+            'entry.1754914772': currentUser.name,    // Имя
+            'entry.12540210': currentUser.email,     // Email  
+            'entry.1756708600': nominationId,        // Номинация
+            'entry.2128743791': studentName          // Студент
+        });
 
-        await fetch(GOOGLE_FORM_URL, {
-            method: 'POST',
-            body: formData,
+        // Отправляем GET запрос (Google Forms принимает и GET)
+        await fetch(`${GOOGLE_FORM_URL}?${formParams.toString()}`, {
+            method: 'GET',
             mode: 'no-cors'
+        });
+
+        console.log('Данные отправлены в Google Forms:', {
+            name: currentUser.name,
+            email: currentUser.email,
+            nomination: nominationId,
+            student: studentName
         });
 
         // Всегда сохраняем локально
@@ -106,6 +115,7 @@ async function saveVoteToGoogleForm(nominationId, studentName) {
         showNotification('Голос сохранен!', 'success');
         
     } catch (error) {
+        console.error('Ошибка отправки в Google Forms:', error);
         // Если интернета нет - сохраняем локально
         saveToLocalStorage(currentUser.id, nominationId, studentName);
         showNotification('Голос сохранен локально', 'info');
