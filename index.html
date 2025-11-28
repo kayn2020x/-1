@@ -7,12 +7,9 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Снежинки -->
     <div id="snowflakes-container"></div>
 
-    <!-- Основной контейнер -->
     <div class="container">
-        <!-- Блок регистрации (показывается если пользователь не зарегистрирован) -->
         <div id="registrationSection" class="registration-section">
             <div class="header">
                 <div class="title-section">
@@ -37,7 +34,6 @@
             </div>
         </div>
 
-        <!-- Блок голосования (показывается после регистрации) -->
         <div id="votingSection" class="voting-section" style="display: none;">
             <div class="user-info" id="userInfo">
                 <span id="userNameDisplay"></span>
@@ -64,26 +60,17 @@
             <div class="nominations-container">
                 <div class="main-nominations">
                     <h2 class="section-title">Главные номинации</h2>
-                    <div class="nominations-grid main-grid" id="mainNominationsContainer">
-                        <!-- Главные номинации -->
-                    </div>
+                    <div class="nominations-grid main-grid" id="mainNominationsContainer"></div>
                 </div>
                 
                 <div class="other-nominations">
                     <h2 class="section-title">Другие номинации</h2>
-                    <div class="nominations-grid other-grid" id="otherNominationsContainer">
-                        <!-- Остальные номинации -->
-                    </div>
+                    <div class="nominations-grid other-grid" id="otherNominationsContainer"></div>
                 </div>
             </div>
 
-            <div class="admin-panel">
-                <span>Панель организатора</span>
-                <div>
-                    <button class="admin-button" onclick="showPasswordModal()">Посмотреть результаты</button>
-                    <button class="admin-button" onclick="exportData()">Экспорт данных</button>
-                    <button class="admin-button" onclick="resetVoting()" style="margin-left: 10px;">Сбросить голосование</button>
-                </div>
+            <div class="admin-access">
+                <button class="admin-access-button" onclick="showPasswordModal()">Доступ для организатора</button>
             </div>
 
             <div class="contact-info">
@@ -92,42 +79,43 @@
         </div>
     </div>
 
-    <!-- Модальное окно для выбора студента -->
     <div id="studentModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2 class="modal-title" id="modalTitle">Выбор победителя</h2>
-            <div class="students-grid" id="studentsGrid">
-                <!-- Студенты будут добавлены через JavaScript -->
-            </div>
+            <div class="students-grid" id="studentsGrid"></div>
             <button class="confirm-button btn-block" id="confirmSelection" disabled>Подтвердить выбор</button>
         </div>
     </div>
 
-    <!-- Модальное окно для ввода пароля -->
     <div id="passwordModal" class="modal password-modal">
         <div class="modal-content" style="max-width: 500px;">
             <span class="close" onclick="closePasswordModal()">&times;</span>
-            <h2 class="modal-title">Введите пароль</h2>
+            <h2 class="modal-title">Введите пароль администратора</h2>
             <div class="form-group">
-                <input type="password" id="adminPassword" placeholder="Введите пароль администратора" style="text-align: center; font-size: 1.2em;">
+                <input type="password" id="adminPassword" placeholder="Введите пароль" style="text-align: center; font-size: 1.2em;">
             </div>
             <button class="confirm-button btn-block" onclick="checkAdminPassword()">Войти</button>
         </div>
     </div>
 
-    <!-- Модальное окно результатов -->
+    <div id="adminPanel" class="admin-panel" style="display: none;">
+        <div class="admin-header">
+            <h2>Панель организатора</h2>
+            <button class="logout-button" onclick="hideAdminPanel()">✕</button>
+        </div>
+        <div class="admin-controls">
+            <button class="admin-button" onclick="showResults()">📊 Посмотреть результаты</button>
+            <button class="admin-button" onclick="exportData()">💾 Экспорт данных</button>
+            <button class="admin-button" onclick="resetVoting()">🔄 Сбросить все данные</button>
+        </div>
+    </div>
+
     <div id="resultsModal" class="modal results-modal">
         <div class="modal-content">
             <span class="close" onclick="closeResults()">&times;</span>
             <h2 class="modal-title">Результаты голосования</h2>
-            <div class="results-grid" id="resultsGrid">
-                <!-- Результаты будут добавлены через JavaScript -->
-            </div>
-            <div style="text-align: center; margin-top: 35px;">
-                <button class="admin-button" onclick="exportData()">Экспорт в CSV</button>
-                <button class="admin-button" onclick="resetVoting()" style="margin-left: 10px;">Сбросить все данные</button>
-            </div>
+            <div class="results-grid" id="resultsGrid"></div>
         </div>
     </div>
 

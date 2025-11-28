@@ -1,12 +1,24 @@
-// Данные студентов (20 человек)
 const students = [
-    "Иван Петров", "Мария Сидорова", "Алексей Козлов", "Елена Новикова", "Дмитрий Волков",
-    "Анна Федорова", "Сергей Морозов", "Ольга Зайцева", "Михаил Павлов", "Наталья Семенова",
-    "Андрей Васильев", "Екатерина Орлова", "Павел Тимофеев", "Ирина Белова", "Артем Крылов",
-    "Светлана Романова", "Никита Соколов", "Татьяна Лебедева", "Владимир Егоров", "Юлия Алексеева"
+    "Асанбеков Тынай",
+    "Барсукова Валерия", 
+    "Воробьев Александр",
+    "Гайдукова Валерия",
+    "Гупанов Данила",
+    "Демирова Анна",
+    "Крутов Павел",
+    "Мазур Александр",
+    "Мамашарипова Зиёдахон",
+    "Медведев Илья",
+    "Московский Дмитрий",
+    "Назаренко Ларион",
+    "Никитин Кирилл",
+    "Одинокова Юлия",
+    "Ракуц Иван",
+    "Резниченко Алексей",
+    "Халваши Иван",
+    "Яцышин Андриан"
 ];
 
-// Данные номинаций (9 номинаций)
 const nominations = [
     {
         id: "best_male",
@@ -55,22 +67,14 @@ const nominations = [
         title: "Душа компании",
         description: "За отличное чувство юмора и умение поднять настроение",
         isMain: false
-    },
-    {
-        id: "discovery", 
-        title: "Открытие года",
-        description: "За наибольший прогресс и развитие за год",
-        isMain: false
     }
 ];
 
-// Хранилище данных
 let votingResults = {};
 let currentNomination = null;
 let currentUser = null;
 const ADMIN_PASSWORD = "admin2024";
 
-// Создание снежинок
 function createSnowflakes() {
     const container = document.getElementById('snowflakes-container');
     const snowflakeCount = 60;
@@ -93,7 +97,6 @@ function createSnowflakes() {
     }
 }
 
-// Валидация данных
 function validateName(name) {
     return name.trim().split(' ').length >= 2 && name.trim().length >= 5;
 }
@@ -103,7 +106,6 @@ function validateEmail(email) {
     return emailRegex.test(email);
 }
 
-// Валидация формы в реальном времени
 function validateForm() {
     const name = document.getElementById('userName').value;
     const email = document.getElementById('userEmail').value;
@@ -135,15 +137,10 @@ function validateForm() {
     return isValid;
 }
 
-// Инициализация приложения
 function initApp() {
     createSnowflakes();
     setInterval(createSnowflakes, 500);
     
-    // ДЛЯ ТЕСТИРОВАНИЯ: Сбрасываем текущего пользователя при каждой загрузке
-    // localStorage.removeItem('currentUser');
-    
-    // Добавляем валидацию в реальном времени
     const userNameInput = document.getElementById('userName');
     const userEmailInput = document.getElementById('userEmail');
     
@@ -152,7 +149,6 @@ function initApp() {
         userEmailInput.addEventListener('input', validateForm);
     }
     
-    // Проверяем, есть ли зарегистрированный пользователь
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
@@ -164,13 +160,11 @@ function initApp() {
     loadSavedData();
 }
 
-// Показать секцию регистрации
 function showRegistrationSection() {
     document.getElementById('registrationSection').style.display = 'block';
     document.getElementById('votingSection').style.display = 'none';
 }
 
-// Показать секцию голосования
 function showVotingSection() {
     document.getElementById('registrationSection').style.display = 'none';
     document.getElementById('votingSection').style.display = 'block';
@@ -182,7 +176,6 @@ function showVotingSection() {
     updateStats();
 }
 
-// Регистрация пользователя (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 function registerUser() {
     const userName = document.getElementById('userName').value.trim();
     const userEmail = document.getElementById('userEmail').value.trim();
@@ -197,24 +190,19 @@ function registerUser() {
         return;
     }
     
-    // УБРАНА ПРОВЕРКА НА ПОВТОРНУЮ РЕГИСТРАЦИЮ - можно регистрироваться с одним email много раз
-    // Это для тестирования, в реальной версии эту проверку нужно вернуть
-    
     currentUser = {
         name: userName,
         email: userEmail,
-        id: Date.now().toString(), // Уникальный ID на основе времени
+        id: Date.now().toString(),
         registeredAt: new Date().toISOString()
     };
     
-    // Сохраняем пользователя
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     
     showVotingSection();
     showNotification(`Добро пожаловать, ${userName}! Приятного голосования!`, 'success');
 }
 
-// Рендеринг номинаций
 function renderNominations() {
     const mainContainer = document.getElementById('mainNominationsContainer');
     const otherContainer = document.getElementById('otherNominationsContainer');
@@ -226,20 +214,17 @@ function renderNominations() {
 
     const otherNominations = nominations.filter(n => !n.isMain);
     
-    // Главные номинации (2 штуки)
     nominations.filter(n => n.isMain).forEach((nomination, index) => {
         const card = createNominationCard(nomination);
         mainContainer.appendChild(card);
     });
     
-    // Другие номинации (7 штук)
     otherNominations.forEach((nomination, index) => {
         const card = createNominationCard(nomination);
         otherContainer.appendChild(card);
     });
 }
 
-// Создание карточки номинации
 function createNominationCard(nomination) {
     const card = document.createElement('div');
     card.className = `nomination-card ${nomination.isMain ? 'main-card' : ''}`;
@@ -268,7 +253,6 @@ function createNominationCard(nomination) {
     return card;
 }
 
-// Настройка модального окна
 function setupModal() {
     const modal = document.getElementById('studentModal');
     const closeBtn = document.querySelector('.close');
@@ -289,7 +273,6 @@ function setupModal() {
     };
 }
 
-// Открытие модального окна для выбора студента
 function openStudentSelection(nominationId) {
     currentNomination = nominationId;
     const modal = document.getElementById('studentModal');
@@ -310,7 +293,6 @@ function openStudentSelection(nominationId) {
     students.forEach((student, index) => {
         const studentCard = document.createElement('div');
         studentCard.className = 'student-card';
-        studentCard.style.animationDelay = `${index * 0.05}s`;
         
         if (currentSelection === student) {
             studentCard.classList.add('selected');
@@ -319,7 +301,7 @@ function openStudentSelection(nominationId) {
         const initials = student.split(' ').map(n => n[0]).join('');
         
         studentCard.innerHTML = `
-            <div class="student-photo">${initials}</div>
+            <div class="student-photo has-image">${initials}</div>
             <div class="student-name">${student}</div>
         `;
 
@@ -331,7 +313,6 @@ function openStudentSelection(nominationId) {
     modal.style.display = 'block';
 }
 
-// Выбор студента в модальном окне
 function selectStudent(student, cardElement) {
     const studentsGrid = document.getElementById('studentsGrid');
     const confirmBtn = document.getElementById('confirmSelection');
@@ -345,7 +326,6 @@ function selectStudent(student, cardElement) {
     cardElement.classList.add('selected');
     confirmBtn.disabled = false;
 
-    // Улучшенная анимация выбора
     cardElement.style.transform = 'scale(0.95)';
     setTimeout(() => {
         cardElement.style.transform = 'scale(1.08)';
@@ -355,7 +335,6 @@ function selectStudent(student, cardElement) {
     }, 300);
 }
 
-// Подтверждение выбора
 function confirmSelection() {
     if (currentNomination) {
         const selectedCard = document.querySelector('.student-card.selected');
@@ -373,7 +352,6 @@ function confirmSelection() {
     }
 }
 
-// Обновление голоса пользователя
 function updateUserVote(nominationId, studentName) {
     const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
     const previousVote = userVotes[nominationId];
@@ -382,7 +360,6 @@ function updateUserVote(nominationId, studentName) {
         votingResults[nominationId] = {};
     }
     
-    // Убираем предыдущий голос если был
     if (previousVote && votingResults[nominationId][previousVote]) {
         votingResults[nominationId][previousVote]--;
         if (votingResults[nominationId][previousVote] <= 0) {
@@ -390,20 +367,17 @@ function updateUserVote(nominationId, studentName) {
         }
     }
     
-    // Добавляем новый голос
     if (!votingResults[nominationId][studentName]) {
         votingResults[nominationId][studentName] = 0;
     }
     votingResults[nominationId][studentName]++;
     
-    // Сохраняем выбор пользователя
     userVotes[nominationId] = studentName;
     localStorage.setItem(`userVotes_${currentUser.id}`, JSON.stringify(userVotes));
     
     saveData();
 }
 
-// Обновление отображения выбранного студента
 function updateNominationDisplay(nominationId, studentName) {
     const selectedDiv = document.getElementById(`selected-${nominationId}`);
     const selectedName = document.getElementById(`selected-name-${nominationId}`);
@@ -416,7 +390,6 @@ function updateNominationDisplay(nominationId, studentName) {
     }
 }
 
-// Показать модальное окно для ввода пароля
 function showPasswordModal() {
     const modal = document.getElementById('passwordModal');
     if (modal) {
@@ -431,7 +404,6 @@ function closePasswordModal() {
     }
 }
 
-// Проверка пароля администратора
 function checkAdminPassword() {
     const passwordInput = document.getElementById('adminPassword');
     if (!passwordInput) return;
@@ -439,13 +411,20 @@ function checkAdminPassword() {
     const password = passwordInput.value;
     if (password === ADMIN_PASSWORD) {
         closePasswordModal();
-        showResults();
+        showAdminPanel();
     } else {
         showNotification('Неверный пароль!', 'error');
     }
 }
 
-// Показать результаты (для организатора)
+function showAdminPanel() {
+    document.getElementById('adminPanel').style.display = 'block';
+}
+
+function hideAdminPanel() {
+    document.getElementById('adminPanel').style.display = 'none';
+}
+
 function showResults() {
     const modal = document.getElementById('resultsModal');
     const resultsGrid = document.getElementById('resultsGrid');
@@ -493,6 +472,7 @@ function showResults() {
     });
     
     modal.style.display = 'block';
+    hideAdminPanel();
 }
 
 function closeResults() {
@@ -502,7 +482,6 @@ function closeResults() {
     }
 }
 
-// Экспорт данных
 function exportData() {
     let csvContent = "Номинация,Студент,Количество голосов,Процент\n";
     
@@ -527,9 +506,9 @@ function exportData() {
     document.body.removeChild(link);
     
     showNotification('Данные экспортированы в CSV!', 'success');
+    hideAdminPanel();
 }
 
-// Выйти из аккаунта
 function logout() {
     if (confirm('Вы уверены, что хотите выйти? Вы сможете зарегистрироваться снова.')) {
         localStorage.removeItem('currentUser');
@@ -537,14 +516,12 @@ function logout() {
     }
 }
 
-// Сброс всех данных (для организатора)
 function resetVoting() {
     if (confirm('ВНИМАНИЕ! Это действие сбросит ВСЕ данные голосования. Продолжить?')) {
         localStorage.removeItem('votingResults');
         localStorage.removeItem('registeredUsers');
         localStorage.removeItem('currentUser');
         
-        // Удаляем все голоса пользователей
         Object.keys(localStorage).forEach(key => {
             if (key.startsWith('userVotes_')) {
                 localStorage.removeItem(key);
@@ -558,7 +535,6 @@ function resetVoting() {
     }
 }
 
-// Обновление статистики
 function updateStats() {
     const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
     const completedNominations = Object.values(userVotes).filter(v => v).length;
@@ -580,12 +556,10 @@ function updateStats() {
     }
 }
 
-// Сохранение данных
 function saveData() {
     localStorage.setItem('votingResults', JSON.stringify(votingResults));
 }
 
-// Загрузка данных
 function loadSavedData() {
     const saved = localStorage.getItem('votingResults');
     if (saved) {
@@ -593,7 +567,6 @@ function loadSavedData() {
     }
 }
 
-// Показать уведомление
 function showNotification(message, type = 'info') {
     if (!document.querySelector('#notification-styles')) {
         const styles = `
@@ -651,5 +624,4 @@ function showNotification(message, type = 'info') {
     }, 4000);
 }
 
-// Запуск приложения
 document.addEventListener('DOMContentLoaded', initApp);

@@ -15,7 +15,6 @@ body {
     overflow-x: hidden;
 }
 
-/* Снежинки */
 .snowflake {
     position: fixed;
     top: -10px;
@@ -47,7 +46,6 @@ body {
     z-index: 1;
 }
 
-/* Хедер */
 .header {
     background: linear-gradient(135deg, #1e1e24, rgba(146, 20, 12, 0.6));
     color: #fff8f0;
@@ -110,7 +108,6 @@ body {
     font-weight: 600;
 }
 
-/* Форма авторизации */
 .auth-container {
     background: rgba(30, 30, 36, 0.92);
     border-radius: 20px;
@@ -172,7 +169,6 @@ body {
     display: none;
 }
 
-/* Контейнер номинаций */
 .nominations-container {
     padding: 40px;
 }
@@ -195,7 +191,6 @@ body {
     margin-top: 30px;
 }
 
-/* Исправленная сетка для номинаций */
 .nominations-grid.main-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -206,14 +201,13 @@ body {
 
 .nominations-grid.other-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
     gap: 25px;
     max-width: 1300px;
     margin: 0 auto;
 }
 
-/* Стили кнопок */
-.admin-button, .vote-button, .confirm-button, .login-button {
+.admin-button, .vote-button, .confirm-button, .login-button, .admin-access-button {
     background: linear-gradient(135deg, #1e1e24, rgba(146, 20, 12, 0.8));
     color: #fff8f0;
     border: 2px solid rgba(146, 20, 12, 0.7);
@@ -221,7 +215,7 @@ body {
     border-radius: 12px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     font-size: 1.1em;
     position: relative;
     overflow: hidden;
@@ -233,7 +227,7 @@ body {
     outline: none;
 }
 
-.admin-button::before, .vote-button::before, .confirm-button::before, .login-button::before {
+.admin-button::before, .vote-button::before, .confirm-button::before, .login-button::before, .admin-access-button::before {
     content: '';
     position: absolute;
     top: 0;
@@ -241,22 +235,23 @@ body {
     width: 100%;
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255, 248, 240, 0.3), transparent);
-    transition: left 0.6s ease;
+    transition: left 0.8s ease;
 }
 
-.admin-button:hover::before, .vote-button:hover::before, .confirm-button:hover::before, .login-button:hover::before {
+.admin-button:hover::before, .vote-button:hover::before, .confirm-button:hover::before, .login-button:hover::before, .admin-access-button:hover::before {
     left: 100%;
 }
 
-.admin-button:hover, .vote-button:hover, .confirm-button:hover, .login-button:hover {
+.admin-button:hover, .vote-button:hover, .confirm-button:hover, .login-button:hover, .admin-access-button:hover {
     background: linear-gradient(135deg, rgba(146, 20, 12, 0.8), #1e1e24);
     transform: translateY(-3px);
     box-shadow: 0 12px 30px rgba(146, 20, 12, 0.5);
     border-color: rgba(255, 248, 240, 0.9);
 }
 
-.admin-button:active, .vote-button:active, .confirm-button:active, .login-button:active {
+.admin-button:active, .vote-button:active, .confirm-button:active, .login-button:active, .admin-access-button:active {
     transform: translateY(-1px);
+    transition: transform 0.1s ease;
 }
 
 .btn-block {
@@ -264,13 +259,12 @@ body {
     width: 100%;
 }
 
-/* Карточки номинаций */
 .nomination-card {
     background: rgba(255, 248, 240, 0.08);
     border-radius: 20px;
     padding: 30px;
     border: 2px solid rgba(146, 20, 12, 0.4);
-    transition: all 0.4s ease;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     cursor: pointer;
     position: relative;
     overflow: hidden;
@@ -288,7 +282,7 @@ body {
     width: 6px;
     height: 100%;
     background: linear-gradient(135deg, #1e1e24, rgba(146, 20, 12, 0.7));
-    transition: width 0.4s ease;
+    transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .nomination-card:hover {
@@ -358,7 +352,6 @@ body {
     font-size: 0.9em;
 }
 
-/* Модальное окно */
 .modal {
     display: none;
     position: fixed;
@@ -381,7 +374,7 @@ body {
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
-    animation: modalShow 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: modalShow 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
     border: 3px solid rgba(146, 20, 12, 0.7);
     color: #fff8f0;
@@ -390,7 +383,7 @@ body {
 @keyframes modalShow {
     from {
         opacity: 0;
-        transform: translateY(-40px) scale(0.9);
+        transform: translateY(-40px) scale(0.95);
     }
     to {
         opacity: 1;
@@ -406,7 +399,7 @@ body {
     font-weight: 300;
     cursor: pointer;
     color: #fff8f0;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     width: 45px;
     height: 45px;
     display: flex;
@@ -440,10 +433,10 @@ body {
     background: rgba(255, 248, 240, 0.08);
     border: 3px solid rgba(146, 20, 12, 0.5);
     border-radius: 20px;
-    padding: 30px 20px;
+    padding: 25px 20px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.4s ease;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
 }
 
@@ -462,13 +455,12 @@ body {
     box-shadow: 0 20px 40px rgba(146, 20, 12, 0.6);
 }
 
-/* Фото студентов */
 .student-photo {
     width: 100px;
     height: 100px;
     border-radius: 50%;
     background: linear-gradient(135deg, #1e1e24, rgba(146, 20, 12, 0.7));
-    margin: 0 auto 20px;
+    margin: 0 auto 15px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -477,7 +469,29 @@ body {
     font-size: 1.8em;
     border: 4px solid rgba(146, 20, 12, 0.5);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
+}
+
+.student-photo.has-image {
+    background: transparent;
+    border-color: rgba(255, 248, 240, 0.3);
+}
+
+.student-photo.has-image::after {
+    content: '📷';
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: rgba(146, 20, 12, 0.8);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7em;
 }
 
 .student-card:hover .student-photo {
@@ -493,7 +507,7 @@ body {
 
 .student-name {
     font-weight: 700;
-    font-size: 1.2em;
+    font-size: 1.1em;
     margin-top: 15px;
     color: #fff8f0;
 }
@@ -520,13 +534,91 @@ body {
     font-size: 1.1em;
 }
 
-.admin-panel {
+.logout-button {
+    background: rgba(220, 53, 69, 0.7);
+    color: #fff8f0;
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 0.8em;
+    transition: all 0.3s ease;
+}
+
+.logout-button:hover {
+    background: rgba(220, 53, 69, 0.9);
+    transform: scale(1.1);
+}
+
+.user-info {
+    position: absolute;
+    top: 25px;
+    right: 25px;
     background: rgba(146, 20, 12, 0.25);
-    padding: 20px 40px;
-    border-bottom: 2px solid rgba(146, 20, 12, 0.3);
+    padding: 12px 18px;
+    border-radius: 10px;
+    border: 2px solid rgba(146, 20, 12, 0.5);
+    font-size: 1em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-access {
+    text-align: center;
+    padding: 20px;
+    background: rgba(146, 20, 12, 0.1);
+    border-top: 1px solid rgba(146, 20, 12, 0.3);
+}
+
+.admin-access-button {
+    background: linear-gradient(135deg, #1e1e24, rgba(106, 17, 203, 0.8));
+    border-color: rgba(106, 17, 203, 0.7);
+}
+
+.admin-access-button:hover {
+    background: linear-gradient(135deg, rgba(106, 17, 203, 0.8), #1e1e24);
+}
+
+.admin-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #1e1e24, #2a2a35);
+    padding: 30px;
+    border-radius: 20px;
+    border: 3px solid rgba(146, 20, 12, 0.7);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    min-width: 400px;
+}
+
+.admin-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(255, 248, 240, 0.2);
+}
+
+.admin-header h2 {
+    color: #fff8f0;
+    font-size: 1.8em;
+    font-weight: 700;
+}
+
+.admin-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 .results-modal, .password-modal {
@@ -580,19 +672,6 @@ body {
     font-weight: 700;
 }
 
-.user-info {
-    position: absolute;
-    top: 25px;
-    right: 25px;
-    background: rgba(146, 20, 12, 0.25);
-    padding: 12px 18px;
-    border-radius: 10px;
-    border: 2px solid rgba(146, 20, 12, 0.5);
-    font-size: 1em;
-    font-weight: 600;
-}
-
-/* Анимации */
 @keyframes slideUp {
     from {
         opacity: 0;
@@ -605,7 +684,7 @@ body {
 }
 
 .nomination-card {
-    animation: slideUp 0.7s ease-out;
+    animation: slideUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .progress-bar {
@@ -621,7 +700,7 @@ body {
     height: 100%;
     background: linear-gradient(135deg, #1e1e24, rgba(146, 20, 12, 0.7));
     border-radius: 4px;
-    transition: width 0.4s ease;
+    transition: width 0.6s ease;
 }
 
 .leading {
@@ -670,74 +749,14 @@ body {
     .gold-subtitle {
         font-size: 1.2em;
     }
-}
-/* Добавь этот CSS в конец файла style.css */
-
-/* Кнопка выхода */
-.logout-button {
-    background: rgba(220, 53, 69, 0.7);
-    color: #fff8f0;
-    border: 1px solid rgba(220, 53, 69, 0.5);
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    margin-left: 10px;
-    font-size: 0.8em;
-    transition: all 0.3s ease;
-}
-
-.logout-button:hover {
-    background: rgba(220, 53, 69, 0.9);
-    transform: scale(1.1);
-}
-
-.user-info {
-    position: absolute;
-    top: 25px;
-    right: 25px;
-    background: rgba(146, 20, 12, 0.25);
-    padding: 12px 18px;
-    border-radius: 10px;
-    border: 2px solid rgba(146, 20, 12, 0.5);
-    font-size: 1em;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-/* Исправленная сетка для других номинаций */
-.nominations-grid.other-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-    gap: 25px;
-    max-width: 1300px;
-    margin: 0 auto;
-}
-
-/* Убираем лишние отступы */
-.other-nominations {
-    margin-top: 30px;
-    padding-bottom: 0;
-}
-
-/* Адаптивность для мобильных */
-@media (max-width: 768px) {
-    .nominations-grid.other-grid {
-        grid-template-columns: 1fr;
+    
+    .admin-panel {
+        min-width: 90%;
+        margin: 0 5%;
     }
     
-    .user-info {
-        position: relative;
-        top: auto;
-        right: auto;
-        margin: 0 auto 20px;
-        justify-content: center;
-        max-width: 300px;
+    .students-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
 }
 
