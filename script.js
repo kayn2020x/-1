@@ -86,46 +86,49 @@ const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSesKdM0WEwiWoG
 const GOOGLE_SHEET_ID = '1rIYZ100UmTW9IXMGcZ9KdDUn16cqk-jcy4vz4EbMU-k';
 const GOOGLE_SHEETS_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json`;
 
-// Сохранить голос в Google Form (исправленная версия)
+// Сохранить голос через Google Apps Script (гарантированно работает)
 async function saveVoteToGoogleForm(nominationId, studentName) {
     try {
-        // Создаем URL с параметрами для Google Forms
-        const formParams = new URLSearchParams({
-            'entry.1754914772': currentUser.name,    // Имя
-            'entry.12540210': currentUser.email,     // Email  
-            'entry.1756708600': nominationId,        // Номинация
-            'entry.2128743791': studentName          // Студент
+        const scriptUrl = 'https://script.google.com/macros/s/AKfycbxk9IhAPWfRrf_0YBx5gDHSTaATDa5UvQ8sxm2JgM1dejiZDViZWKk7jiPcoXBuUzi3Yw/exec';
+        
+        const voteData = {
+            user_name: currentUser.name,
+            user_email: currentUser.email,
+            nomination_id: nominationId,
+            student_name: studentName
+        };
+
+        const response = await fetch(scriptUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(voteData)
         });
 
-        // Отправляем GET запрос (Google Forms принимает и GET)
-        await fetch(`${GOOGLE_FORM_URL}?${formParams.toString()}`, {
-            method: 'GET',
-            mode: 'no-cors'
-        });
-
-        console.log('Данные отправлены в Google Forms:', {
-            name: currentUser.name,
-            email: currentUser.email,
-            nomination: nominationId,
-            student: studentName
-        });
-
-        // Всегда сохраняем локально
-        saveToLocalStorage(currentUser.id, nominationId, studentName);
-        showNotification('Голос сохранен!', 'success');
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('✅ Данные успешно сохранены в Google Sheets:', voteData);
+            saveToLocalStorage(currentUser.id, nominationId, studentName);
+            showNotification('Голос сохранен!', 'success');
+        } else {
+            throw new Error(result.error);
+        }
         
     } catch (error) {
-        console.error('Ошибка отправки в Google Forms:', error);
-        // Если интернета нет - сохраняем локально
+        console.error('❌ Ошибка отправки:', error);
+        // Сохраняем локально как запасной вариант
         saveToLocalStorage(currentUser.id, nominationId, studentName);
         showNotification('Голос сохранен локально', 'info');
     }
 }
-
 // Загрузить все голоса из Google Sheets
 async function loadVotesFromGoogleSheets() {
     try {
-        const response = await fetch(GOOGLE_SHEETS_URL);
+        // Используем прямой URL к таблице
+        const sheetsUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json`;
+        const response = await fetch(sheetsUrl);
         const text = await response.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
         
@@ -136,10 +139,11 @@ async function loadVotesFromGoogleSheets() {
         json.table.rows.forEach((row, index) => {
             if (index === 0) return; // Пропускаем заголовок
             
-            const userName = row.c[0]?.v || '';     // Столбец A - Имя
-            const userEmail = row.c[1]?.v || '';    // Столбец B - Email
-            const nominationId = row.c[2]?.v || ''; // Столбец C - Номинация
-            const studentName = row.c[3]?.v || '';  // Столбец D - Студент
+            const timestamp = row.c[0]?.v || '';     // Столбец A - Время
+            const userName = row.c[1]?.v || '';      // Столбец B - Имя
+            const userEmail = row.c[2]?.v || '';     // Столбец C - Email
+            const nominationId = row.c[3]?.v || '';  // Столбец D - Номинация
+            const studentName = row.c[4]?.v || '';   // Столбец E - Студент
             
             if (userName && nominationId && studentName) {
                 const userId = `sheet_${index}`;
@@ -160,6 +164,7 @@ async function loadVotesFromGoogleSheets() {
             }
         });
         
+        console.log('📊 Загружено голосов из Google Sheets:', Object.keys(allVotes).length);
         return { votes: allVotes, users: allUsers };
         
     } catch (error) {
