@@ -77,67 +77,59 @@ let currentNomination = null;
 let currentUser = null;
 const ADMIN_PASSWORD = "admin2024";
 
-// Ключ для хранения всех голосов в одном месте
-const ALL_VOTES_KEY = "all_votes_data";
-const USERS_KEY = "registered_users";
+const ALL_VOTES_KEY = "premia_isp_2025_all_votes_v2";
+const ALL_USERS_KEY = "premia_isp_2025_all_users_v2";
+const RESULTS_KEY = "premia_isp_2025_results_v2";
 
-// Функция для получения ВСЕХ голосов всех пользователей
-function getAllVotesData() {
-    const data = localStorage.getItem(ALL_VOTES_KEY);
-    return data ? JSON.parse(data) : {};
-}
-
-// Функция для сохранения ВСЕХ голосов
-function saveAllVotesData(data) {
-    localStorage.setItem(ALL_VOTES_KEY, JSON.stringify(data));
-}
-
-// Функция для получения всех зарегистрированных пользователей
-function getAllUsers() {
-    const users = localStorage.getItem(USERS_KEY);
-    return users ? JSON.parse(users) : {};
-}
-
-// Функция для сохранения пользователя
-function saveUser(user) {
-    const users = getAllUsers();
-    users[user.id] = {
-        name: user.name,
-        email: user.email,
-        registeredAt: user.registeredAt
-    };
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-// Функция для сохранения голоса пользователя
-function saveUserVote(userId, nominationId, studentName) {
-    const allVotes = getAllVotesData();
-    
-    if (!allVotes[userId]) {
-        allVotes[userId] = {};
+function getAllVotes() {
+    try {
+        const data = localStorage.getItem(ALL_VOTES_KEY);
+        if (!data) return {};
+        return JSON.parse(data);
+    } catch (e) {
+        console.error('Ошибка чтения голосов:', e);
+        return {};
     }
-    
-    allVotes[userId][nominationId] = studentName;
-    saveAllVotesData(allVotes);
-    
-    // Пересчитываем общие результаты
-    recalculateTotalResults();
 }
 
-// Функция для пересчета общих результатов
+function saveAllVotes(votes) {
+    try {
+        localStorage.setItem(ALL_VOTES_KEY, JSON.stringify(votes));
+    } catch (e) {
+        console.error('Ошибка сохранения голосов:', e);
+    }
+}
+
+function getAllUsers() {
+    try {
+        const data = localStorage.getItem(ALL_USERS_KEY);
+        if (!data) return {};
+        return JSON.parse(data);
+    } catch (e) {
+        console.error('Ошибка чтения пользователей:', e);
+        return {};
+    }
+}
+
+function saveAllUsers(users) {
+    try {
+        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(users));
+    } catch (e) {
+        console.error('Ошибка сохранения пользователей:', e);
+    }
+}
+
 function recalculateTotalResults() {
-    const allVotes = getAllVotesData();
+    const allVotes = getAllVotes();
     const newResults = {};
     
-    // Инициализируем структуру для результатов
     nominations.forEach(nomination => {
         newResults[nomination.id] = {};
     });
     
-    // Собираем все голоса
     Object.values(allVotes).forEach(userVotes => {
         Object.entries(userVotes).forEach(([nominationId, studentName]) => {
-            if (studentName && newResults[nominationId]) {
+            if (studentName && studentName.trim() !== "" && newResults[nominationId]) {
                 if (!newResults[nominationId][studentName]) {
                     newResults[nominationId][studentName] = 0;
                 }
@@ -153,6 +145,8 @@ function recalculateTotalResults() {
 
 function createSnowflakes() {
     const container = document.getElementById('snowflakes-container');
+    if (!container) return;
+    
     const snowflakeCount = window.innerWidth < 768 ? 25 : 50;
     
     for (let i = 0; i < snowflakeCount; i++) {
@@ -184,8 +178,8 @@ function validateEmail(email) {
 }
 
 function validateForm() {
-    const name = document.getElementById('userName').value;
-    const email = document.getElementById('userEmail').value;
+    const name = document.getElementById('userName')?.value || '';
+    const email = document.getElementById('userEmail')?.value || '';
     const nameError = document.getElementById('nameError');
     const emailError = document.getElementById('emailError');
     const nameInput = document.getElementById('userName');
@@ -194,21 +188,21 @@ function validateForm() {
     let isValid = true;
     
     if (!validateName(name)) {
-        nameError.style.display = 'block';
-        nameInput.classList.add('invalid');
+        if (nameError) nameError.style.display = 'block';
+        if (nameInput) nameInput.classList.add('invalid');
         isValid = false;
     } else {
-        nameError.style.display = 'none';
-        nameInput.classList.remove('invalid');
+        if (nameError) nameError.style.display = 'none';
+        if (nameInput) nameInput.classList.remove('invalid');
     }
     
     if (!validateEmail(email)) {
-        emailError.style.display = 'block';
-        emailInput.classList.add('invalid');
+        if (emailError) emailError.style.display = 'block';
+        if (emailInput) emailInput.classList.add('invalid');
         isValid = false;
     } else {
-        emailError.style.display = 'none';
-        emailInput.classList.remove('invalid');
+        if (emailError) emailError.style.display = 'none';
+        if (emailInput) emailInput.classList.remove('invalid');
     }
     
     return isValid;
@@ -224,6 +218,13 @@ function initApp() {
     if (userNameInput && userEmailInput) {
         userNameInput.addEventListener('input', validateForm);
         userEmailInput.addEventListener('input', validateForm);
+        
+        userNameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') registerUser();
+        });
+        userEmailInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') registerUser();
+        });
     }
     
     const savedUser = localStorage.getItem('currentUser');
@@ -244,16 +245,21 @@ function initApp() {
 }
 
 function showRegistrationSection() {
-    document.getElementById('registrationSection').style.display = 'block';
-    document.getElementById('votingSection').style.display = 'none';
+    const regSection = document.getElementById('registrationSection');
+    const votingSection = document.getElementById('votingSection');
+    if (regSection) regSection.style.display = 'block';
+    if (votingSection) votingSection.style.display = 'none';
 }
 
 function showVotingSection() {
-    document.getElementById('registrationSection').style.display = 'none';
-    document.getElementById('votingSection').style.display = 'block';
+    const regSection = document.getElementById('registrationSection');
+    const votingSection = document.getElementById('votingSection');
+    if (regSection) regSection.style.display = 'none';
+    if (votingSection) votingSection.style.display = 'block';
     
-    if (currentUser && document.getElementById('userNameDisplay')) {
-        document.getElementById('userNameDisplay').textContent = currentUser.name;
+    if (currentUser) {
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        if (userNameDisplay) userNameDisplay.textContent = currentUser.name;
     }
     
     renderNominations();
@@ -262,8 +268,13 @@ function showVotingSection() {
 }
 
 function registerUser() {
-    const userName = document.getElementById('userName').value.trim();
-    const userEmail = document.getElementById('userEmail').value.trim();
+    const userNameInput = document.getElementById('userName');
+    const userEmailInput = document.getElementById('userEmail');
+    
+    if (!userNameInput || !userEmailInput) return;
+    
+    const userName = userNameInput.value.trim();
+    const userEmail = userEmailInput.value.trim();
     
     if (!userName || !userEmail) {
         showNotification('Пожалуйста, заполните все поля', 'error');
@@ -282,8 +293,15 @@ function registerUser() {
         registeredAt: new Date().toISOString()
     };
     
+    const allUsers = getAllUsers();
+    allUsers[currentUser.id] = {
+        name: currentUser.name,
+        email: currentUser.email,
+        registeredAt: currentUser.registeredAt
+    };
+    saveAllUsers(allUsers);
+    
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    saveUser(currentUser);
     
     showVotingSection();
     showNotification(`Добро пожаловать, ${userName}! Приятного голосования!`, 'success');
@@ -319,7 +337,7 @@ function createNominationCard(nomination) {
         card.classList.add('female-nomination');
     }
     
-    const allVotes = getAllVotesData();
+    const allVotes = getAllVotes();
     const userVotes = allVotes[currentUser?.id] || {};
     const selectedStudent = userVotes[nomination.id];
     
@@ -346,7 +364,7 @@ function setupModal() {
 
     if (closeBtn) {
         closeBtn.onclick = () => {
-            modal.style.display = 'none';
+            if (modal) modal.style.display = 'none';
             currentNomination = null;
         };
     }
@@ -373,11 +391,13 @@ function openStudentSelection(nominationId) {
     if (!modal || !modalTitle || !studentsGrid || !confirmBtn) return;
 
     const nomination = nominations.find(n => n.id === nominationId);
-    modalTitle.textContent = nomination ? nomination.title : 'Выбор победителя';
+    if (nomination) {
+        modalTitle.textContent = nomination.title;
+    }
     
     studentsGrid.innerHTML = '';
 
-    const allVotes = getAllVotesData();
+    const allVotes = getAllVotes();
     const userVotes = allVotes[currentUser?.id] || {};
     const currentSelection = userVotes[nominationId];
 
@@ -400,33 +420,17 @@ function openStudentSelection(nominationId) {
             const img = document.createElement('img');
             img.src = student.photo;
             img.alt = student.name;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.borderRadius = '50%';
+            img.style.objectFit = 'cover';
             img.onerror = function() {
-                this.style.display = 'none';
-                const initials = student.name.split(' ').map(n => n[0]).join('');
-                photoDiv.textContent = initials;
-                photoDiv.style.background = student.gender === 'female' ? 
-                    'linear-gradient(135deg, #ff6b9d, #c2185b)' : 
-                    'linear-gradient(135deg, #4fc3f7, #1565c0)';
-                photoDiv.style.color = '#fff8f0';
-                photoDiv.style.display = 'flex';
-                photoDiv.style.alignItems = 'center';
-                photoDiv.style.justifyContent = 'center';
-                photoDiv.style.fontWeight = '600';
-                photoDiv.style.fontSize = '1.2em';
+                img.style.display = 'none';
+                showInitials(photoDiv, student);
             };
             photoDiv.appendChild(img);
         } else {
-            const initials = student.name.split(' ').map(n => n[0]).join('');
-            photoDiv.textContent = initials;
-            photoDiv.style.background = student.gender === 'female' ? 
-                'linear-gradient(135deg, #ff6b9d, #c2185b)' : 
-                'linear-gradient(135deg, #4fc3f7, #1565c0)';
-            photoDiv.style.color = '#fff8f0';
-            photoDiv.style.display = 'flex';
-            photoDiv.style.alignItems = 'center';
-            photoDiv.style.justifyContent = 'center';
-            photoDiv.style.fontWeight = '600';
-            photoDiv.style.fontSize = '1.2em';
+            showInitials(photoDiv, student);
         }
 
         studentCard.innerHTML = `
@@ -440,6 +444,20 @@ function openStudentSelection(nominationId) {
 
     confirmBtn.disabled = !currentSelection;
     modal.style.display = 'block';
+}
+
+function showInitials(photoDiv, student) {
+    const initials = student.name.split(' ').map(n => n[0]).join('');
+    photoDiv.textContent = initials;
+    photoDiv.style.background = student.gender === 'female' ? 
+        'linear-gradient(135deg, #ff6b9d, #c2185b)' : 
+        'linear-gradient(135deg, #4fc3f7, #1565c0)';
+    photoDiv.style.color = '#fff8f0';
+    photoDiv.style.display = 'flex';
+    photoDiv.style.alignItems = 'center';
+    photoDiv.style.justifyContent = 'center';
+    photoDiv.style.fontWeight = '600';
+    photoDiv.style.fontSize = '1.2em';
 }
 
 function selectStudent(studentName, cardElement) {
@@ -467,7 +485,10 @@ function confirmSelection() {
     const selectedCard = document.querySelector('#studentModal .student-card.selected');
     if (!selectedCard) return;
     
-    const studentName = selectedCard.querySelector('.student-name').textContent;
+    const studentNameElement = selectedCard.querySelector('.student-name');
+    if (!studentNameElement) return;
+    
+    const studentName = studentNameElement.textContent;
     
     saveUserVote(currentUser.id, currentNomination, studentName);
     updateNominationDisplay(currentNomination, studentName);
@@ -476,8 +497,21 @@ function confirmSelection() {
     showNotification(`Вы выбрали: ${studentName}`, 'success');
     
     const modal = document.getElementById('studentModal');
-    modal.style.display = 'none';
+    if (modal) modal.style.display = 'none';
     currentNomination = null;
+}
+
+function saveUserVote(userId, nominationId, studentName) {
+    const allVotes = getAllVotes();
+    
+    if (!allVotes[userId]) {
+        allVotes[userId] = {};
+    }
+    
+    allVotes[userId][nominationId] = studentName;
+    saveAllVotes(allVotes);
+    
+    recalculateTotalResults();
 }
 
 function updateNominationDisplay(nominationId, studentName) {
@@ -556,7 +590,6 @@ function showResults() {
     
     resultsGrid.innerHTML = '';
     
-    // Обновляем результаты перед показом
     recalculateTotalResults();
     
     nominations.forEach(nomination => {
@@ -613,8 +646,21 @@ function showVoteDetails() {
     
     resultsGrid.innerHTML = '<h3 style="text-align: center; margin-bottom: 20px; color: #fff8f0;">Детали голосования - Все пользователи</h3>';
     
-    const allVotes = getAllVotesData();
+    const allVotes = getAllVotes();
     const allUsers = getAllUsers();
+    
+    let totalVotesCount = 0;
+    Object.values(allVotes).forEach(userVotes => {
+        totalVotesCount += Object.values(userVotes).filter(v => v).length;
+    });
+    
+    const totalInfo = document.createElement('div');
+    totalInfo.style.textAlign = 'center';
+    totalInfo.style.marginBottom = '20px';
+    totalInfo.style.color = '#fff8f0';
+    totalInfo.style.fontSize = '1.1em';
+    totalInfo.innerHTML = `<strong>Всего проголосовало: ${Object.keys(allVotes).length} пользователей</strong>`;
+    resultsGrid.appendChild(totalInfo);
     
     nominations.forEach(nomination => {
         const resultItem = document.createElement('div');
@@ -626,12 +672,15 @@ function showVoteDetails() {
         `;
         
         let hasVotes = false;
+        let nominationVotes = 0;
         
-        // Собираем голоса для этой номинации
         Object.entries(allVotes).forEach(([userId, userVotes]) => {
             if (userVotes[nomination.id]) {
                 hasVotes = true;
-                const userName = allUsers[userId]?.name || `Пользователь ${userId}`;
+                nominationVotes++;
+                const userInfo = allUsers[userId];
+                const userName = userInfo ? userInfo.name : `Пользователь ${userId}`;
+                
                 resultsHTML += `
                     <li>
                         <span class="student-result-name">${userName}</span>
@@ -647,7 +696,7 @@ function showVoteDetails() {
             resultsHTML += '<li class="no-votes">Голосов пока нет</li>';
         }
         
-        resultsHTML += '</ul>';
+        resultsHTML += `</ul><div class="results-stats">Проголосовало в этой номинации: ${nominationVotes}</div>`;
         resultItem.innerHTML = resultsHTML;
         resultsGrid.appendChild(resultItem);
     });
@@ -664,7 +713,6 @@ function closeResults() {
 }
 
 function exportData() {
-    // Обновляем результаты перед экспортом
     recalculateTotalResults();
     
     let csvContent = "Номинация,Студент,Количество голосов,Процент\n";
@@ -681,7 +729,7 @@ function exportData() {
             });
     });
     
-    const allVotes = getAllVotesData();
+    const allVotes = getAllVotes();
     const allUsers = getAllUsers();
     
     csvContent += "\n\nДетали голосования:\n";
@@ -691,7 +739,8 @@ function exportData() {
         Object.entries(userVotes).forEach(([nominationId, studentName]) => {
             if (studentName) {
                 const nomination = nominations.find(n => n.id === nominationId);
-                const userName = allUsers[userId]?.name || `Пользователь ${userId}`;
+                const userInfo = allUsers[userId];
+                const userName = userInfo ? userInfo.name : `Пользователь ${userId}`;
                 csvContent += `"${userName}","${nomination?.title || nominationId}","${studentName}"\n`;
             }
         });
@@ -701,7 +750,7 @@ function exportData() {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `результаты_голосования_${new Date().toLocaleDateString('ru-RU')}.csv`);
+    link.setAttribute('download', `результаты_премии_исп_${new Date().toLocaleDateString('ru-RU')}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -713,16 +762,14 @@ function exportData() {
 
 function resetVoting() {
     if (confirm('ВНИМАНИЕ! Это действие сбросит ВСЕ данные голосования. Продолжить?')) {
-        // Удаляем только данные голосования, оставляя текущего пользователя
         const currentUserBackup = localStorage.getItem('currentUser');
         
-        // Удаляем только данные голосования
         localStorage.removeItem(ALL_VOTES_KEY);
-        localStorage.removeItem('votingResults');
+        localStorage.removeItem(RESULTS_KEY);
         
-        // Восстанавливаем текущего пользователя
         if (currentUserBackup) {
             localStorage.setItem('currentUser', currentUserBackup);
+            currentUser = JSON.parse(currentUserBackup);
         }
         
         votingResults = {};
@@ -737,7 +784,7 @@ function resetVoting() {
 function updateStats() {
     if (!currentUser) return;
     
-    const allVotes = getAllVotesData();
+    const allVotes = getAllVotes();
     const userVotes = allVotes[currentUser.id] || {};
     const completedNominations = Object.values(userVotes).filter(v => v).length;
     
@@ -748,7 +795,6 @@ function updateStats() {
         completedElement.textContent = `${completedNominations}/${nominations.length}`;
     }
     
-    // Обновляем общее количество голосов
     recalculateTotalResults();
     let totalVotesCount = 0;
     Object.values(votingResults).forEach(nomination => {
@@ -761,26 +807,34 @@ function updateStats() {
 }
 
 function saveData() {
-    localStorage.setItem('votingResults', JSON.stringify(votingResults));
+    try {
+        localStorage.setItem(RESULTS_KEY, JSON.stringify(votingResults));
+    } catch (e) {
+        console.error('Ошибка сохранения результатов:', e);
+    }
 }
 
 function loadSavedData() {
-    const saved = localStorage.getItem('votingResults');
-    if (saved) {
-        try {
+    try {
+        const saved = localStorage.getItem(RESULTS_KEY);
+        if (saved) {
             votingResults = JSON.parse(saved);
-        } catch (e) {
-            votingResults = {};
+        } else {
+            recalculateTotalResults();
         }
-    } else {
-        // Если нет сохраненных результатов, пересчитываем
-        recalculateTotalResults();
+    } catch (e) {
+        console.error('Ошибка загрузки результатов:', e);
+        votingResults = {};
     }
 }
 
 function showNotification(message, type = 'info') {
     const oldNotifications = document.querySelectorAll('.notification');
-    oldNotifications.forEach(notif => notif.remove());
+    oldNotifications.forEach(notif => {
+        if (notif.parentNode) {
+            notif.parentNode.removeChild(notif);
+        }
+    });
 
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
@@ -815,21 +869,38 @@ function showNotification(message, type = 'info') {
         notification.style.transform = 'translateX(400px)';
         setTimeout(() => {
             if (notification.parentNode) {
-                notification.remove();
+                notification.parentNode.removeChild(notification);
             }
         }, 400);
     }, 3000);
 }
 
+function logout() {
+    if (confirm('Вы уверены, что хотите выйти? Вы сможете зарегистрироваться снова.')) {
+        localStorage.removeItem('currentUser');
+        currentUser = null;
+        showRegistrationSection();
+        showNotification('Вы вышли из системы', 'info');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         const adminControls = document.querySelector('.admin-controls');
-        if (adminControls && !document.querySelector('.admin-button[onclick="showVoteDetails()"]')) {
-            const detailsButton = document.createElement('button');
-            detailsButton.className = 'admin-button';
-            detailsButton.innerHTML = '<span class="btn-text">Кто за кого голосовал</span><span class="btn-arrow">→</span>';
-            detailsButton.onclick = showVoteDetails;
-            adminControls.appendChild(detailsButton);
+        if (adminControls) {
+            if (!document.querySelector('.admin-button[onclick="showVoteDetails()"]')) {
+                const detailsButton = document.createElement('button');
+                detailsButton.className = 'admin-button';
+                detailsButton.innerHTML = '<span class="btn-text">Кто за кого голосовал</span><span class="btn-arrow">→</span>';
+                detailsButton.onclick = showVoteDetails;
+                adminControls.appendChild(detailsButton);
+            }
+            
+            const logoutBtn = document.createElement('button');
+            logoutBtn.className = 'admin-button';
+            logoutBtn.innerHTML = '<span class="btn-text">Выйти</span>';
+            logoutBtn.onclick = logout;
+            adminControls.appendChild(logoutBtn);
         }
     }, 100);
     
