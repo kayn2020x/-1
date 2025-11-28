@@ -234,7 +234,6 @@ function recalculateTotalResults() {
     return newResults;
 }
 
-// Остальные функции остаются без изменений
 function createSnowflakes() {
     const container = document.getElementById('snowflakes-container');
     if (!container) return;
@@ -359,14 +358,22 @@ function showVotingSection() {
     updateStats();
 }
 
+// ГЛАВНАЯ ФУНКЦИЯ РЕГИСТРАЦИИ - должна быть в глобальной области
 function registerUser() {
+    console.log('Функция registerUser вызвана');
+    
     const userNameInput = document.getElementById('userName');
     const userEmailInput = document.getElementById('userEmail');
     
-    if (!userNameInput || !userEmailInput) return;
+    if (!userNameInput || !userEmailInput) {
+        console.error('Не найдены поля ввода');
+        return;
+    }
     
     const userName = userNameInput.value.trim();
     const userEmail = userEmailInput.value.trim();
+    
+    console.log('Введенные данные:', { userName, userEmail });
     
     if (!userName || !userEmail) {
         showNotification('Пожалуйста, заполните все поля', 'error');
@@ -978,10 +985,53 @@ function logout() {
     }
 }
 
+// ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен, инициализируем приложение...');
+    
+    // Добавляем обработчик для кнопки регистрации
+    const registerButton = document.querySelector('.login-button');
+    if (registerButton) {
+        registerButton.onclick = registerUser;
+        console.log('Обработчик кнопки регистрации добавлен');
+    } else {
+        console.error('Кнопка регистрации не найдена!');
+    }
+    
+    // Добавляем кнопки в админ-панель
     setTimeout(() => {
         const adminControls = document.querySelector('.admin-controls');
         if (adminControls) {
             if (!document.querySelector('.admin-button[onclick="showVoteDetails()"]')) {
                 const detailsButton = document.createElement('button');
-                detailsButton.className = 'admin
+                detailsButton.className = 'admin-button';
+                detailsButton.innerHTML = '<span class="btn-text">Кто за кого голосовал</span><span class="btn-arrow">→</span>';
+                detailsButton.onclick = showVoteDetails;
+                adminControls.appendChild(detailsButton);
+            }
+            
+            const logoutBtn = document.createElement('button');
+            logoutBtn.className = 'admin-button';
+            logoutBtn.innerHTML = '<span class="btn-text">Выйти</span>';
+            logoutBtn.onclick = logout;
+            adminControls.appendChild(logoutBtn);
+        }
+    }, 100);
+    
+    // Запускаем приложение
+    initApp();
+});
+
+// Делаем функции глобальными для HTML onclick
+window.registerUser = registerUser;
+window.openStudentSelection = openStudentSelection;
+window.showPasswordModal = showPasswordModal;
+window.closePasswordModal = closePasswordModal;
+window.checkAdminPassword = checkAdminPassword;
+window.hideAdminPanel = hideAdminPanel;
+window.showResults = showResults;
+window.showVoteDetails = showVoteDetails;
+window.closeResults = closeResults;
+window.exportData = exportData;
+window.resetVoting = resetVoting;
+window.logout = logout;
