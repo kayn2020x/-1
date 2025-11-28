@@ -1,22 +1,22 @@
 const students = [
-    "Асанбеков Тынай",
-    "Барсукова Валерия", 
-    "Воробьев Александр",
-    "Гайдукова Валерия",
-    "Гупанов Данила",
-    "Демирова Анна",
-    "Крутов Павел",
-    "Мазур Александр",
-    "Мамашарипова Зиёдахон",
-    "Медведев Илья",
-    "Московский Дмитрий",
-    "Назаренко Ларион",
-    "Никитин Кирилл",
-    "Одинокова Юлия",
-    "Ракуц Иван",
-    "Резниченко Алексей",
-    "Халваши Иван",
-    "Яцышин Андриан"
+    { name: "Асанбеков Тынай", photo: "photos/asanbekov.jpg", gender: "male" },
+    { name: "Барсукова Валерия", photo: "photos/barsukova.jpg", gender: "female" },
+    { name: "Воробьев Александр", photo: "photos/vorobiev.jpg", gender: "male" },
+    { name: "Гайдукова Валерия", photo: "photos/gaydukova.jpg", gender: "female" },
+    { name: "Гупанов Данила", photo: "photos/gupanov.jpg", gender: "male" },
+    { name: "Демирова Анна", photo: "photos/demirova.jpg", gender: "female" },
+    { name: "Крутов Павел", photo: "photos/krutov.jpg", gender: "male" },
+    { name: "Мазур Александр", photo: "photos/mazur.jpg", gender: "male" },
+    { name: "Мамашарипова Зиёдахон", photo: "photos/mamasharipova.jpg", gender: "female" },
+    { name: "Медведев Илья", photo: "photos/medvedev.jpg", gender: "male" },
+    { name: "Московский Дмитрий", photo: "photos/moskovsky.jpg", gender: "male" },
+    { name: "Назаренко Ларион", photo: "photos/nazarenko.jpg", gender: "male" },
+    { name: "Никитин Кирилл", photo: "photos/nikitin.jpg", gender: "male" },
+    { name: "Одинокова Юлия", photo: "photos/odinokova.jpg", gender: "female" },
+    { name: "Ракуц Иван", photo: "photos/rakuts.jpg", gender: "male" },
+    { name: "Резниченко Алексей", photo: "photos/reznichenko.jpg", gender: "male" },
+    { name: "Халваши Иван", photo: "photos/khalvashi.jpg", gender: "male" },
+    { name: "Яцышин Андриан", photo: "photos/yatsyshin.jpg", gender: "male" }
 ];
 
 const nominations = [
@@ -24,13 +24,15 @@ const nominations = [
         id: "best_male",
         title: "Лучший парень группы",
         description: "Главный приз за выдающиеся качества и лидерство",
-        isMain: true
+        isMain: true,
+        gender: "male"
     },
     {
         id: "best_female", 
         title: "Лучшая девушка группы",
         description: "Главный приз за выдающиеся качества и лидерство", 
-        isMain: true
+        isMain: true,
+        gender: "female"
     },
     {
         id: "best_student",
@@ -71,29 +73,31 @@ const nominations = [
 ];
 
 let votingResults = {};
+let userVotesHistory = {};
 let currentNomination = null;
 let currentUser = null;
 const ADMIN_PASSWORD = "admin2024";
 
 function createSnowflakes() {
     const container = document.getElementById('snowflakes-container');
-    const snowflakeCount = 20;
+    const snowflakeCount = window.innerWidth < 768 ? 25 : 50;
     
     for (let i = 0; i < snowflakeCount; i++) {
         const snowflake = document.createElement('div');
         snowflake.classList.add('snowflake');
         snowflake.innerHTML = '❄';
         snowflake.style.left = Math.random() * 100 + 'vw';
-        snowflake.style.animationDuration = (Math.random() * 3 + 3) + 's';
-        snowflake.style.opacity = Math.random() * 0.3 + 0.2;
-        snowflake.style.fontSize = (Math.random() * 8 + 8) + 'px';
+        snowflake.style.animationDuration = (Math.random() * 5 + 3) + 's';
+        snowflake.style.opacity = Math.random() * 0.7 + 0.3;
+        snowflake.style.fontSize = (Math.random() * 8 + 6) + 'px';
+        snowflake.style.animationDelay = Math.random() * 5 + 's';
         container.appendChild(snowflake);
         
         setTimeout(() => {
             if (snowflake.parentNode) {
                 snowflake.remove();
             }
-        }, 6000);
+        }, 15000);
     }
 }
 
@@ -139,7 +143,7 @@ function validateForm() {
 
 function initApp() {
     createSnowflakes();
-    setInterval(createSnowflakes, 2000);
+    setInterval(createSnowflakes, 3000);
     
     const userNameInput = document.getElementById('userName');
     const userEmailInput = document.getElementById('userEmail');
@@ -151,13 +155,19 @@ function initApp() {
     
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        showVotingSection();
+        try {
+            currentUser = JSON.parse(savedUser);
+            showVotingSection();
+        } catch (e) {
+            localStorage.removeItem('currentUser');
+            showRegistrationSection();
+        }
     } else {
         showRegistrationSection();
     }
     
     loadSavedData();
+    updateStats();
 }
 
 function showRegistrationSection() {
@@ -169,7 +179,9 @@ function showVotingSection() {
     document.getElementById('registrationSection').style.display = 'none';
     document.getElementById('votingSection').style.display = 'block';
     
-    document.getElementById('userNameDisplay').textContent = currentUser.name;
+    if (currentUser && document.getElementById('userNameDisplay')) {
+        document.getElementById('userNameDisplay').textContent = currentUser.name;
+    }
     
     renderNominations();
     setupModal();
@@ -200,7 +212,7 @@ function registerUser() {
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     
     showVotingSection();
-    showNotification(`Добро пожаловать, ${userName}!`, 'success');
+    showNotification(`Добро пожаловать, ${userName}! Приятного голосования!`, 'success');
 }
 
 function renderNominations() {
@@ -212,13 +224,14 @@ function renderNominations() {
     mainContainer.innerHTML = '';
     otherContainer.innerHTML = '';
 
-    nominations.forEach((nomination) => {
+    nominations.filter(n => n.isMain).forEach(nomination => {
         const card = createNominationCard(nomination);
-        if (nomination.isMain) {
-            mainContainer.appendChild(card);
-        } else {
-            otherContainer.appendChild(card);
-        }
+        mainContainer.appendChild(card);
+    });
+    
+    nominations.filter(n => !n.isMain).forEach(nomination => {
+        const card = createNominationCard(nomination);
+        otherContainer.appendChild(card);
     });
 }
 
@@ -226,37 +239,41 @@ function createNominationCard(nomination) {
     const card = document.createElement('div');
     card.className = `nomination-card ${nomination.isMain ? 'main-card' : ''}`;
     
-    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
+    if (nomination.gender === 'male') {
+        card.classList.add('male-nomination');
+    } else if (nomination.gender === 'female') {
+        card.classList.add('female-nomination');
+    }
+    
+    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser?.id}`) || '{}');
     const selectedStudent = userVotes[nomination.id];
     
     card.innerHTML = `
         <h3>${nomination.title}</h3>
         <p>${nomination.description}</p>
-        <div class="selected-student" id="selected-${nomination.id}">
+        <div class="selected-student" id="selected-${nomination.id}" 
+             style="${selectedStudent ? 'display: flex' : 'display: none'}">
             <span id="selected-name-${nomination.id}">${selectedStudent || ''}</span>
         </div>
-        <button class="vote-button" onclick="openStudentSelection('${nomination.id}')">
-            ${selectedStudent ? 'Изменить выбор' : 'Выбрать студента'}
+        <button class="vote-button nomination-vote-btn" onclick="openStudentSelection('${nomination.id}')">
+            <span class="btn-text">${selectedStudent ? 'Изменить выбор' : 'Выбрать студента'}</span>
+            <span class="btn-arrow">→</span>
         </button>
     `;
-    
-    if (selectedStudent) {
-        const selectedDiv = document.getElementById(`selected-${nomination.id}`);
-        if (selectedDiv) {
-            selectedDiv.style.display = 'flex';
-        }
-    }
     
     return card;
 }
 
 function setupModal() {
     const modal = document.getElementById('studentModal');
-    const closeBtn = document.querySelector('.close');
+    const closeBtn = document.querySelector('#studentModal .close');
     const confirmBtn = document.getElementById('confirmSelection');
 
     if (closeBtn) {
-        closeBtn.onclick = () => modal.style.display = 'none';
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+            currentNomination = null;
+        };
     }
     
     if (confirmBtn) {
@@ -266,6 +283,7 @@ function setupModal() {
     window.onclick = (event) => {
         if (event.target === modal) {
             modal.style.display = 'none';
+            currentNomination = null;
         }
     };
 }
@@ -284,25 +302,63 @@ function openStudentSelection(nominationId) {
     
     studentsGrid.innerHTML = '';
 
-    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
+    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser?.id}`) || '{}');
     const currentSelection = userVotes[nominationId];
 
-    students.forEach((student) => {
+    const filteredStudents = nomination.gender ? 
+        students.filter(student => student.gender === nomination.gender) : 
+        students;
+
+    filteredStudents.forEach((student) => {
         const studentCard = document.createElement('div');
         studentCard.className = 'student-card';
         
-        if (currentSelection === student) {
+        if (currentSelection === student.name) {
             studentCard.classList.add('selected');
         }
         
-        const initials = student.split(' ').map(n => n[0]).join('');
+        const photoDiv = document.createElement('div');
+        photoDiv.className = 'student-photo';
         
-        studentCard.innerHTML = `
-            <div class="student-photo has-image">${initials}</div>
-            <div class="student-name">${student}</div>
-        `;
+        if (student.photo) {
+            const img = document.createElement('img');
+            img.src = student.photo;
+            img.alt = student.name;
+            img.onerror = function() {
+                this.style.display = 'none';
+                const initials = student.name.split(' ').map(n => n[0]).join('');
+                photoDiv.textContent = initials;
+                photoDiv.style.background = student.gender === 'female' ? 
+                    'linear-gradient(135deg, #ff6b9d, #c2185b)' : 
+                    'linear-gradient(135deg, #4fc3f7, #1565c0)';
+                photoDiv.style.color = '#fff8f0';
+                photoDiv.style.display = 'flex';
+                photoDiv.style.alignItems = 'center';
+                photoDiv.style.justifyContent = 'center';
+                photoDiv.style.fontWeight = '600';
+                photoDiv.style.fontSize = '1.2em';
+            };
+            photoDiv.appendChild(img);
+        } else {
+            const initials = student.name.split(' ').map(n => n[0]).join('');
+            photoDiv.textContent = initials;
+            photoDiv.style.background = student.gender === 'female' ? 
+                'linear-gradient(135deg, #ff6b9d, #c2185b)' : 
+                'linear-gradient(135deg, #4fc3f7, #1565c0)';
+            photoDiv.style.color = '#fff8f0';
+            photoDiv.style.display = 'flex';
+            photoDiv.style.alignItems = 'center';
+            photoDiv.style.justifyContent = 'center';
+            photoDiv.style.fontWeight = '600';
+            photoDiv.style.fontSize = '1.2em';
+        }
 
-        studentCard.onclick = () => selectStudent(student, studentCard);
+        studentCard.innerHTML = `
+            <div class="student-name">${student.name}</div>
+        `;
+        studentCard.insertBefore(photoDiv, studentCard.firstChild);
+
+        studentCard.onclick = () => selectStudent(student.name, studentCard);
         studentsGrid.appendChild(studentCard);
     });
 
@@ -310,7 +366,7 @@ function openStudentSelection(nominationId) {
     modal.style.display = 'block';
 }
 
-function selectStudent(student, cardElement) {
+function selectStudent(studentName, cardElement) {
     const studentsGrid = document.getElementById('studentsGrid');
     const confirmBtn = document.getElementById('confirmSelection');
     
@@ -322,9 +378,421 @@ function selectStudent(student, cardElement) {
     
     cardElement.classList.add('selected');
     confirmBtn.disabled = false;
+
+    cardElement.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        cardElement.style.transform = 'scale(1.05)';
+    }, 150);
 }
 
 function confirmSelection() {
-    if (currentNomination) {
-        const selectedCard = document.querySelector('.student-card.selected');
-        if (!selectedCard)
+    if (!currentNomination || !currentUser) return;
+    
+    const selectedCard = document.querySelector('#studentModal .student-card.selected');
+    if (!selectedCard) return;
+    
+    const studentName = selectedCard.querySelector('.student-name').textContent;
+    
+    saveVoteHistory(currentUser.id, currentUser.name, currentNomination, studentName);
+    
+    updateUserVote(currentNomination, studentName);
+    updateNominationDisplay(currentNomination, studentName);
+    updateStats();
+    
+    showNotification(`Вы выбрали: ${studentName}`, 'success');
+    
+    const modal = document.getElementById('studentModal');
+    modal.style.display = 'none';
+    currentNomination = null;
+}
+
+function saveVoteHistory(userId, userName, nominationId, studentName) {
+    if (!userVotesHistory[userId]) {
+        userVotesHistory[userId] = [];
+    }
+    
+    userVotesHistory[userId] = userVotesHistory[userId].filter(
+        vote => vote.nominationId !== nominationId
+    );
+    
+    userVotesHistory[userId].push({
+        userName: userName,
+        nominationId: nominationId,
+        nominationTitle: nominations.find(n => n.id === nominationId)?.title || nominationId,
+        studentName: studentName,
+        timestamp: new Date().toISOString()
+    });
+    
+    localStorage.setItem('userVotesHistory', JSON.stringify(userVotesHistory));
+}
+
+function updateUserVote(nominationId, studentName) {
+    if (!currentUser) return;
+    
+    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
+    const previousVote = userVotes[nominationId];
+    
+    if (!votingResults[nominationId]) {
+        votingResults[nominationId] = {};
+    }
+    
+    if (previousVote && votingResults[nominationId][previousVote]) {
+        votingResults[nominationId][previousVote]--;
+        if (votingResults[nominationId][previousVote] <= 0) {
+            delete votingResults[nominationId][previousVote];
+        }
+    }
+    
+    if (!votingResults[nominationId][studentName]) {
+        votingResults[nominationId][studentName] = 0;
+    }
+    votingResults[nominationId][studentName]++;
+    
+    userVotes[nominationId] = studentName;
+    localStorage.setItem(`userVotes_${currentUser.id}`, JSON.stringify(userVotes));
+    
+    saveData();
+}
+
+function updateNominationDisplay(nominationId, studentName) {
+    const selectedDiv = document.getElementById(`selected-${nominationId}`);
+    const selectedName = document.getElementById(`selected-name-${nominationId}`);
+    const buttons = document.querySelectorAll(`.nomination-vote-btn[onclick="openStudentSelection('${nominationId}')"]`);
+    
+    if (selectedDiv && selectedName) {
+        selectedName.textContent = studentName;
+        selectedDiv.style.display = 'flex';
+    }
+    
+    buttons.forEach(button => {
+        const btnText = button.querySelector('.btn-text');
+        if (btnText) {
+            btnText.textContent = 'Изменить выбор';
+        }
+    });
+}
+
+function showPasswordModal() {
+    const modal = document.getElementById('passwordModal');
+    const passwordInput = document.getElementById('adminPassword');
+    
+    if (modal) {
+        modal.style.display = 'block';
+        if (passwordInput) {
+            passwordInput.value = '';
+            setTimeout(() => passwordInput.focus(), 100);
+        }
+    }
+}
+
+function closePasswordModal() {
+    const modal = document.getElementById('passwordModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function checkAdminPassword() {
+    const passwordInput = document.getElementById('adminPassword');
+    if (!passwordInput) return;
+    
+    const password = passwordInput.value;
+    if (password === ADMIN_PASSWORD) {
+        closePasswordModal();
+        showAdminPanel();
+        showNotification('Доступ разрешен!', 'success');
+    } else {
+        showNotification('Неверный пароль!', 'error');
+        passwordInput.value = '';
+        passwordInput.focus();
+    }
+}
+
+function showAdminPanel() {
+    const adminPanel = document.getElementById('adminPanel');
+    if (adminPanel) {
+        adminPanel.style.display = 'block';
+    }
+}
+
+function hideAdminPanel() {
+    const adminPanel = document.getElementById('adminPanel');
+    if (adminPanel) {
+        adminPanel.style.display = 'none';
+    }
+}
+
+function showResults() {
+    const modal = document.getElementById('resultsModal');
+    const resultsGrid = document.getElementById('resultsGrid');
+    
+    if (!modal || !resultsGrid) return;
+    
+    resultsGrid.innerHTML = '';
+    
+    nominations.forEach(nomination => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'result-item';
+        
+        const nominationResults = votingResults[nomination.id] || {};
+        const totalVotes = Object.values(nominationResults).reduce((sum, count) => sum + count, 0);
+        const sortedResults = Object.entries(nominationResults)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 5);
+        
+        let resultsHTML = `
+            <h4>${nomination.title}</h4>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${totalVotes > 0 ? '100%' : '0%'}"></div>
+            </div>
+            <div class="results-stats">Всего голосов: ${totalVotes}</div>
+            <ul class="result-list">
+        `;
+        
+        if (sortedResults.length > 0) {
+            sortedResults.forEach(([student, votes], index) => {
+                const percentage = totalVotes > 0 ? (votes / totalVotes * 100).toFixed(1) : 0;
+                const isLeading = index === 0 && votes > 0;
+                resultsHTML += `
+                    <li class="${isLeading ? 'leading' : ''}">
+                        <span class="student-result-name">${student}</span>
+                        <div class="result-details">
+                            <span style="margin-right: 10px; color: #fff8f0;">${percentage}%</span>
+                            <span class="vote-count">${votes}</span>
+                        </div>
+                    </li>
+                `;
+            });
+        } else {
+            resultsHTML += '<li class="no-votes">Голосов пока нет</li>';
+        }
+        
+        resultsHTML += '</ul>';
+        resultItem.innerHTML = resultsHTML;
+        resultsGrid.appendChild(resultItem);
+    });
+    
+    modal.style.display = 'block';
+    hideAdminPanel();
+}
+
+function showVoteDetails() {
+    const modal = document.getElementById('resultsModal');
+    const resultsGrid = document.getElementById('resultsGrid');
+    
+    if (!modal || !resultsGrid) return;
+    
+    resultsGrid.innerHTML = '<h3 style="text-align: center; margin-bottom: 20px; color: #fff8f0;">Детали голосования</h3>';
+    
+    const allVotes = {};
+    Object.keys(userVotesHistory).forEach(userId => {
+        userVotesHistory[userId].forEach(vote => {
+            if (!allVotes[vote.nominationId]) {
+                allVotes[vote.nominationId] = [];
+            }
+            allVotes[vote.nominationId].push({
+                userName: vote.userName,
+                studentName: vote.studentName
+            });
+        });
+    });
+    
+    nominations.forEach(nomination => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'result-item';
+        
+        const nominationVotes = allVotes[nomination.id] || [];
+        
+        let resultsHTML = `
+            <h4>${nomination.title}</h4>
+            <div class="results-stats">Всего голосов: ${nominationVotes.length}</div>
+            <ul class="result-list">
+        `;
+        
+        if (nominationVotes.length > 0) {
+            nominationVotes.forEach(vote => {
+                resultsHTML += `
+                    <li>
+                        <span class="student-result-name">${vote.userName}</span>
+                        <div class="result-details">
+                            <span style="color: #fff8f0;">→ ${vote.studentName}</span>
+                        </div>
+                    </li>
+                `;
+            });
+        } else {
+            resultsHTML += '<li class="no-votes">Голосов пока нет</li>';
+        }
+        
+        resultsHTML += '</ul>';
+        resultItem.innerHTML = resultsHTML;
+        resultsGrid.appendChild(resultItem);
+    });
+    
+    modal.style.display = 'block';
+    hideAdminPanel();
+}
+
+function closeResults() {
+    const modal = document.getElementById('resultsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function exportData() {
+    let csvContent = "Номинация,Студент,Количество голосов,Процент\n";
+    
+    nominations.forEach(nomination => {
+        const results = votingResults[nomination.id] || {};
+        const totalVotes = Object.values(results).reduce((sum, count) => sum + count, 0);
+        
+        Object.entries(results)
+            .sort(([,a], [,b]) => b - a)
+            .forEach(([student, votes]) => {
+                const percentage = totalVotes > 0 ? (votes / totalVotes * 100).toFixed(2) : 0;
+                csvContent += `"${nomination.title}","${student}",${votes},${percentage}%\n`;
+            });
+    });
+    
+    csvContent += "\n\nДетали голосования:\n";
+    csvContent += "Пользователь,Номинация,Выбранный студент\n";
+    
+    Object.keys(userVotesHistory).forEach(userId => {
+        userVotesHistory[userId].forEach(vote => {
+            csvContent += `"${vote.userName}","${vote.nominationTitle}","${vote.studentName}"\n`;
+        });
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `результаты_голосования_${new Date().toLocaleDateString('ru-RU')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showNotification('Данные экспортированы в CSV!', 'success');
+    hideAdminPanel();
+}
+
+function resetVoting() {
+    if (confirm('ВНИМАНИЕ! Это действие сбросит ВСЕ данные голосования. Продолжить?')) {
+        localStorage.clear();
+        votingResults = {};
+        userVotesHistory = {};
+        currentUser = null;
+        
+        showNotification('Все данные голосования сброшены!', 'success');
+        setTimeout(() => {
+            location.reload();
+        }, 1500);
+    }
+}
+
+function updateStats() {
+    if (!currentUser) return;
+    
+    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
+    const completedNominations = Object.values(userVotes).filter(v => v).length;
+    
+    const completedElement = document.getElementById('completedNominations');
+    const totalVotesElement = document.getElementById('totalVotes');
+    
+    if (completedElement) {
+        completedElement.textContent = `${completedNominations}/${nominations.length}`;
+    }
+    
+    let totalVotesCount = 0;
+    Object.values(votingResults).forEach(nomination => {
+        totalVotesCount += Object.values(nomination).reduce((sum, count) => sum + count, 0);
+    });
+    
+    if (totalVotesElement) {
+        totalVotesElement.textContent = totalVotesCount;
+    }
+}
+
+function saveData() {
+    localStorage.setItem('votingResults', JSON.stringify(votingResults));
+}
+
+function loadSavedData() {
+    const saved = localStorage.getItem('votingResults');
+    if (saved) {
+        try {
+            votingResults = JSON.parse(saved);
+        } catch (e) {
+            votingResults = {};
+        }
+    }
+    
+    const savedHistory = localStorage.getItem('userVotesHistory');
+    if (savedHistory) {
+        try {
+            userVotesHistory = JSON.parse(savedHistory);
+        } catch (e) {
+            userVotesHistory = {};
+        }
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const oldNotifications = document.querySelectorAll('.notification');
+    oldNotifications.forEach(notif => notif.remove());
+
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 10px;
+        color: #fff8f0;
+        font-weight: 600;
+        z-index: 10000;
+        transform: translateX(400px);
+        transition: transform 0.4s ease;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(146, 20, 12, 0.7);
+        font-size: 1em;
+        max-width: 300px;
+        ${type === 'success' ? 'background: linear-gradient(135deg, #1e1e24, rgba(40, 167, 69, 0.8));' : ''}
+        ${type === 'error' ? 'background: linear-gradient(135deg, #1e1e24, rgba(220, 53, 69, 0.8));' : ''}
+        ${type === 'info' ? 'background: linear-gradient(135deg, #1e1e24, rgba(146, 20, 12, 0.8));' : ''}
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    setTimeout(() => {
+        notification.style.transform = 'translateX(400px)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 400);
+    }, 3000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const adminControls = document.querySelector('.admin-controls');
+        if (adminControls && !document.querySelector('.admin-button[onclick="showVoteDetails()"]')) {
+            const detailsButton = document.createElement('button');
+            detailsButton.className = 'admin-button';
+            detailsButton.innerHTML = '<span class="btn-text">Кто за кого голосовал</span><span class="btn-arrow">→</span>';
+            detailsButton.onclick = showVoteDetails;
+            adminControls.appendChild(detailsButton);
+        }
+    }, 100);
+    
+    initApp();
+});
