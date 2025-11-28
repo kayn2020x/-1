@@ -77,20 +77,17 @@ let currentNomination = null;
 let currentUser = null;
 const ADMIN_PASSWORD = "admin2024";
 
-const ALL_VOTES_KEY = "premia_isp_2025_all_votes_v2";
-const ALL_USERS_KEY = "premia_isp_2025_all_users_v2";
-const RESULTS_KEY = "premia_isp_2025_results_v2";
+const ALL_VOTES_KEY = "premia_isp_2025_all_votes";
+const ALL_USERS_KEY = "premia_isp_2025_all_users";
+const RESULTS_KEY = "premia_isp_2025_results";
 
-// Google Forms настройки
-const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSesKdM0WEwiWoG2R60ZbYWE6rLWf4QGc7jaWmMrG1PpY3Gbew/formResponse';
-const GOOGLE_SHEET_ID = '1rIYZ100UmTW9IXMGcZ9KdDUn16cqk-jcy4vz4EbMU-k';
-const GOOGLE_SHEETS_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json`;
+// Google Apps Script URL
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyI0Uk8-ImyK_Lso2zwtNZ1nRHXRM4ZrLi9W6gDFnx_0w8It6I87TBG1cUWxzzNsnvz/exec';
+const SHEET_ID = '1HbEEsNYNua6Wh6JARNiE_JFcqdNF1ivq83u0DelVN70';
 
-// Сохранить голос через Google Apps Script (гарантированно работает)
-async function saveVoteToGoogleForm(nominationId, studentName) {
+// Сохранить голос через Google Apps Script
+async function saveVoteToServer(nominationId, studentName) {
     try {
-        const scriptUrl = 'https://script.google.com/macros/s/AKfycbxk9IhAPWfRrf_0YBx5gDHSTaATDa5UvQ8sxm2JgM1dejiZDViZWKk7jiPcoXBuUzi3Yw/exec';
-        
         const voteData = {
             user_name: currentUser.name,
             user_email: currentUser.email,
@@ -98,7 +95,9 @@ async function saveVoteToGoogleForm(nominationId, studentName) {
             student_name: studentName
         };
 
-        const response = await fetch(scriptUrl, {
+        console.log('📤 Отправляю данные:', voteData);
+
+        const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -107,27 +106,29 @@ async function saveVoteToGoogleForm(nominationId, studentName) {
         });
 
         const result = await response.json();
+        console.log('📥 Ответ от сервера:', result);
         
         if (result.success) {
-            console.log('✅ Данные успешно сохранены в Google Sheets:', voteData);
+            console.log('✅ Данные успешно сохранены в Google Sheets!');
             saveToLocalStorage(currentUser.id, nominationId, studentName);
             showNotification('Голос сохранен!', 'success');
         } else {
-            throw new Error(result.error);
+            throw new Error(result.error || 'Неизвестная ошибка');
         }
         
     } catch (error) {
         console.error('❌ Ошибка отправки:', error);
-        // Сохраняем локально как запасной вариант
         saveToLocalStorage(currentUser.id, nominationId, studentName);
         showNotification('Голос сохранен локально', 'info');
     }
 }
+
 // Загрузить все голоса из Google Sheets
 async function loadVotesFromGoogleSheets() {
     try {
-        // Используем прямой URL к таблице
-        const sheetsUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json`;
+        const sheetsUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+        
+        console.log('📥 Загружаю данные из Google Sheets...');
         const response = await fetch(sheetsUrl);
         const text = await response.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
@@ -135,28 +136,21 @@ async function loadVotesFromGoogleSheets() {
         const allVotes = {};
         const allUsers = {};
         
-        // Обрабатываем все строки (кроме заголовка)
         json.table.rows.forEach((row, index) => {
-            if (index === 0) return; // Пропускаем заголовок
+            if (index === 0) return;
             
-            const timestamp = row.c[0]?.v || '';     // Столбец A - Время
-            const userName = row.c[1]?.v || '';      // Столбец B - Имя
-            const userEmail = row.c[2]?.v || '';     // Столбец C - Email
-            const nominationId = row.c[3]?.v || '';  // Столбец D - Номинация
-            const studentName = row.c[4]?.v || '';   // Столбец E - Студент
+            const userName = row.c[1]?.v || '';
+            const userEmail = row.c[2]?.v || '';
+            const nominationId = row.c[3]?.v || '';
+            const studentName = row.c[4]?.v || '';
             
             if (userName && nominationId && studentName) {
                 const userId = `sheet_${index}`;
                 
-                // Сохраняем пользователя
                 if (!allUsers[userId]) {
-                    allUsers[userId] = {
-                        name: userName,
-                        email: userEmail
-                    };
+                    allUsers[userId] = { name: userName, email: userEmail };
                 }
                 
-                // Сохраняем голос
                 if (!allVotes[userId]) {
                     allVotes[userId] = {};
                 }
@@ -164,23 +158,21 @@ async function loadVotesFromGoogleSheets() {
             }
         });
         
-        console.log('📊 Загружено голосов из Google Sheets:', Object.keys(allVotes).length);
+        console.log('📊 Загружено голосов:', Object.keys(allVotes).length);
         return { votes: allVotes, users: allUsers };
         
     } catch (error) {
-        console.error('Ошибка загрузки из Google Sheets:', error);
+        console.error('Ошибка загрузки:', error);
         return { votes: {}, users: {} };
     }
 }
 
-// Функции для работы с localStorage
+// LocalStorage функции
 function getAllVotes() {
     try {
         const data = localStorage.getItem(ALL_VOTES_KEY);
-        if (!data) return {};
-        return JSON.parse(data);
+        return data ? JSON.parse(data) : {};
     } catch (e) {
-        console.error('Ошибка чтения голосов:', e);
         return {};
     }
 }
@@ -188,18 +180,14 @@ function getAllVotes() {
 function saveAllVotes(votes) {
     try {
         localStorage.setItem(ALL_VOTES_KEY, JSON.stringify(votes));
-    } catch (e) {
-        console.error('Ошибка сохранения голосов:', e);
-    }
+    } catch (e) {}
 }
 
 function getAllUsers() {
     try {
         const data = localStorage.getItem(ALL_USERS_KEY);
-        if (!data) return {};
-        return JSON.parse(data);
+        return data ? JSON.parse(data) : {};
     } catch (e) {
-        console.error('Ошибка чтения пользователей:', e);
         return {};
     }
 }
@@ -207,21 +195,14 @@ function getAllUsers() {
 function saveAllUsers(users) {
     try {
         localStorage.setItem(ALL_USERS_KEY, JSON.stringify(users));
-    } catch (e) {
-        console.error('Ошибка сохранения пользователей:', e);
-    }
+    } catch (e) {}
 }
 
 function saveToLocalStorage(userId, nominationId, studentName) {
     const allVotes = getAllVotes();
-    
-    if (!allVotes[userId]) {
-        allVotes[userId] = {};
-    }
-    
+    if (!allVotes[userId]) allVotes[userId] = {};
     allVotes[userId][nominationId] = studentName;
     saveAllVotes(allVotes);
-    
     recalculateTotalResults();
 }
 
@@ -235,7 +216,7 @@ function recalculateTotalResults() {
     
     Object.values(allVotes).forEach(userVotes => {
         Object.entries(userVotes).forEach(([nominationId, studentName]) => {
-            if (studentName && studentName.trim() !== "" && newResults[nominationId]) {
+            if (studentName && newResults[nominationId]) {
                 if (!newResults[nominationId][studentName]) {
                     newResults[nominationId][studentName] = 0;
                 }
@@ -246,16 +227,16 @@ function recalculateTotalResults() {
     
     votingResults = newResults;
     saveData();
-    return newResults;
 }
 
+// Визуальные функции
 function createSnowflakes() {
     const container = document.getElementById('snowflakes-container');
     if (!container) return;
     
-    const snowflakeCount = window.innerWidth < 768 ? 25 : 50;
+    const count = window.innerWidth < 768 ? 25 : 50;
     
-    for (let i = 0; i < snowflakeCount; i++) {
+    for (let i = 0; i < count; i++) {
         const snowflake = document.createElement('div');
         snowflake.classList.add('snowflake');
         snowflake.innerHTML = '❄';
@@ -266,11 +247,7 @@ function createSnowflakes() {
         snowflake.style.animationDelay = Math.random() * 5 + 's';
         container.appendChild(snowflake);
         
-        setTimeout(() => {
-            if (snowflake.parentNode) {
-                snowflake.remove();
-            }
-        }, 15000);
+        setTimeout(() => snowflake.remove(), 15000);
     }
 }
 
@@ -373,22 +350,14 @@ function showVotingSection() {
     updateStats();
 }
 
-// ГЛАВНАЯ ФУНКЦИЯ РЕГИСТРАЦИИ - должна быть в глобальной области
 function registerUser() {
-    console.log('Функция registerUser вызвана');
-    
     const userNameInput = document.getElementById('userName');
     const userEmailInput = document.getElementById('userEmail');
     
-    if (!userNameInput || !userEmailInput) {
-        console.error('Не найдены поля ввода');
-        return;
-    }
+    if (!userNameInput || !userEmailInput) return;
     
     const userName = userNameInput.value.trim();
     const userEmail = userEmailInput.value.trim();
-    
-    console.log('Введенные данные:', { userName, userEmail });
     
     if (!userName || !userEmail) {
         showNotification('Пожалуйста, заполните все поля', 'error');
@@ -445,11 +414,8 @@ function createNominationCard(nomination) {
     const card = document.createElement('div');
     card.className = `nomination-card ${nomination.isMain ? 'main-card' : ''}`;
     
-    if (nomination.gender === 'male') {
-        card.classList.add('male-nomination');
-    } else if (nomination.gender === 'female') {
-        card.classList.add('female-nomination');
-    }
+    if (nomination.gender === 'male') card.classList.add('male-nomination');
+    else if (nomination.gender === 'female') card.classList.add('female-nomination');
     
     const allVotes = getAllVotes();
     const userVotes = allVotes[currentUser?.id] || {};
@@ -483,9 +449,7 @@ function setupModal() {
         };
     }
     
-    if (confirmBtn) {
-        confirmBtn.onclick = confirmSelection;
-    }
+    if (confirmBtn) confirmBtn.onclick = confirmSelection;
 
     window.onclick = (event) => {
         if (event.target === modal) {
@@ -505,9 +469,7 @@ function openStudentSelection(nominationId) {
     if (!modal || !modalTitle || !studentsGrid || !confirmBtn) return;
 
     const nomination = nominations.find(n => n.id === nominationId);
-    if (nomination) {
-        modalTitle.textContent = nomination.title;
-    }
+    if (nomination) modalTitle.textContent = nomination.title;
     
     studentsGrid.innerHTML = '';
 
@@ -523,9 +485,7 @@ function openStudentSelection(nominationId) {
         const studentCard = document.createElement('div');
         studentCard.className = 'student-card';
         
-        if (currentSelection === student.name) {
-            studentCard.classList.add('selected');
-        }
+        if (currentSelection === student.name) studentCard.classList.add('selected');
         
         const photoDiv = document.createElement('div');
         photoDiv.className = 'student-photo';
@@ -547,11 +507,8 @@ function openStudentSelection(nominationId) {
             showInitials(photoDiv, student);
         }
 
-        studentCard.innerHTML = `
-            <div class="student-name">${student.name}</div>
-        `;
+        studentCard.innerHTML = `<div class="student-name">${student.name}</div>`;
         studentCard.insertBefore(photoDiv, studentCard.firstChild);
-
         studentCard.onclick = () => selectStudent(student.name, studentCard);
         studentsGrid.appendChild(studentCard);
     });
@@ -580,17 +537,12 @@ function selectStudent(studentName, cardElement) {
     
     if (!studentsGrid || !confirmBtn) return;
     
-    Array.from(studentsGrid.children).forEach(card => {
-        card.classList.remove('selected');
-    });
-    
+    Array.from(studentsGrid.children).forEach(card => card.classList.remove('selected'));
     cardElement.classList.add('selected');
     confirmBtn.disabled = false;
 
     cardElement.style.transform = 'scale(0.95)';
-    setTimeout(() => {
-        cardElement.style.transform = 'scale(1.05)';
-    }, 150);
+    setTimeout(() => cardElement.style.transform = 'scale(1.05)', 150);
 }
 
 function confirmSelection() {
@@ -604,8 +556,7 @@ function confirmSelection() {
     
     const studentName = studentNameElement.textContent;
     
-    // Сохраняем в Google Form и локально
-    saveVoteToGoogleForm(currentNomination, studentName);
+    saveVoteToServer(currentNomination, studentName);
     updateNominationDisplay(currentNomination, studentName);
     updateStats();
     
@@ -628,9 +579,7 @@ function updateNominationDisplay(nominationId, studentName) {
     
     buttons.forEach(button => {
         const btnText = button.querySelector('.btn-text');
-        if (btnText) {
-            btnText.textContent = 'Изменить выбор';
-        }
+        if (btnText) btnText.textContent = 'Изменить выбор';
     });
 }
 
@@ -649,9 +598,7 @@ function showPasswordModal() {
 
 function closePasswordModal() {
     const modal = document.getElementById('passwordModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    if (modal) modal.style.display = 'none';
 }
 
 function checkAdminPassword() {
@@ -672,16 +619,12 @@ function checkAdminPassword() {
 
 function showAdminPanel() {
     const adminPanel = document.getElementById('adminPanel');
-    if (adminPanel) {
-        adminPanel.style.display = 'block';
-    }
+    if (adminPanel) adminPanel.style.display = 'block';
 }
 
 function hideAdminPanel() {
     const adminPanel = document.getElementById('adminPanel');
-    if (adminPanel) {
-        adminPanel.style.display = 'none';
-    }
+    if (adminPanel) adminPanel.style.display = 'none';
 }
 
 function showResults() {
@@ -691,7 +634,6 @@ function showResults() {
     if (!modal || !resultsGrid) return;
     
     resultsGrid.innerHTML = '';
-    
     recalculateTotalResults();
     
     nominations.forEach(nomination => {
@@ -740,7 +682,6 @@ function showResults() {
     hideAdminPanel();
 }
 
-// Обновленная функция показа деталей голосования
 async function showVoteDetails() {
     const modal = document.getElementById('resultsModal');
     const resultsGrid = document.getElementById('resultsGrid');
@@ -749,12 +690,10 @@ async function showVoteDetails() {
     
     resultsGrid.innerHTML = '<h3 style="text-align: center; margin-bottom: 20px; color: #fff8f0;">Детали голосования - Все пользователи</h3>';
     
-    // Загружаем данные из Google Sheets
     const sheetData = await loadVotesFromGoogleSheets();
     const allVotes = sheetData.votes;
     const allUsers = sheetData.users;
     
-    // Объединяем с локальными данными
     const localVotes = getAllVotes();
     const localUsers = getAllUsers();
     
@@ -782,10 +721,7 @@ async function showVoteDetails() {
         const resultItem = document.createElement('div');
         resultItem.className = 'result-item';
         
-        let resultsHTML = `
-            <h4>${nomination.title}</h4>
-            <ul class="result-list">
-        `;
+        let resultsHTML = `<h4>${nomination.title}</h4><ul class="result-list">`;
         
         let hasVotes = false;
         let nominationVotes = 0;
@@ -808,10 +744,7 @@ async function showVoteDetails() {
             }
         });
         
-        if (!hasVotes) {
-            resultsHTML += '<li class="no-votes">Голосов пока нет</li>';
-        }
-        
+        if (!hasVotes) resultsHTML += '<li class="no-votes">Голосов пока нет</li>';
         resultsHTML += `</ul><div class="results-stats">Проголосовало в этой номинации: ${nominationVotes}</div>`;
         resultItem.innerHTML = resultsHTML;
         resultsGrid.appendChild(resultItem);
@@ -823,9 +756,7 @@ async function showVoteDetails() {
 
 function closeResults() {
     const modal = document.getElementById('resultsModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    if (modal) modal.style.display = 'none';
 }
 
 function exportData() {
@@ -848,8 +779,7 @@ function exportData() {
     const allVotes = getAllVotes();
     const allUsers = getAllUsers();
     
-    csvContent += "\n\nДетали голосования:\n";
-    csvContent += "Пользователь,Номинация,Выбранный студент\n";
+    csvContent += "\n\nДетали голосования:\nПользователь,Номинация,Выбранный студент\n";
     
     Object.entries(allVotes).forEach(([userId, userVotes]) => {
         Object.entries(userVotes).forEach(([nominationId, studentName]) => {
@@ -891,9 +821,7 @@ function resetVoting() {
         votingResults = {};
         
         showNotification('Все данные голосования сброшены!', 'success');
-        setTimeout(() => {
-            location.reload();
-        }, 1500);
+        setTimeout(() => location.reload(), 1500);
     }
 }
 
@@ -907,9 +835,7 @@ function updateStats() {
     const completedElement = document.getElementById('completedNominations');
     const totalVotesElement = document.getElementById('totalVotes');
     
-    if (completedElement) {
-        completedElement.textContent = `${completedNominations}/${nominations.length}`;
-    }
+    if (completedElement) completedElement.textContent = `${completedNominations}/${nominations.length}`;
     
     recalculateTotalResults();
     let totalVotesCount = 0;
@@ -917,17 +843,13 @@ function updateStats() {
         totalVotesCount += Object.values(nomination).reduce((sum, count) => sum + count, 0);
     });
     
-    if (totalVotesElement) {
-        totalVotesElement.textContent = totalVotesCount;
-    }
+    if (totalVotesElement) totalVotesElement.textContent = totalVotesCount;
 }
 
 function saveData() {
     try {
         localStorage.setItem(RESULTS_KEY, JSON.stringify(votingResults));
-    } catch (e) {
-        console.error('Ошибка сохранения результатов:', e);
-    }
+    } catch (e) {}
 }
 
 function loadSavedData() {
@@ -939,18 +861,13 @@ function loadSavedData() {
             recalculateTotalResults();
         }
     } catch (e) {
-        console.error('Ошибка загрузки результатов:', e);
         votingResults = {};
     }
 }
 
 function showNotification(message, type = 'info') {
     const oldNotifications = document.querySelectorAll('.notification');
-    oldNotifications.forEach(notif => {
-        if (notif.parentNode) {
-            notif.parentNode.removeChild(notif);
-        }
-    });
+    oldNotifications.forEach(notif => notif.remove());
 
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
@@ -977,17 +894,10 @@ function showNotification(message, type = 'info') {
     
     document.body.appendChild(notification);
     
-    setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
-    }, 100);
-    
+    setTimeout(() => notification.style.transform = 'translateX(0)', 100);
     setTimeout(() => {
         notification.style.transform = 'translateX(400px)';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 400);
+        setTimeout(() => notification.remove(), 400);
     }, 3000);
 }
 
@@ -1000,20 +910,13 @@ function logout() {
     }
 }
 
-// ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+// Инициализация
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM загружен, инициализируем приложение...');
+    console.log('🚀 Запускаем приложение...');
     
-    // Добавляем обработчик для кнопки регистрации
     const registerButton = document.querySelector('.login-button');
-    if (registerButton) {
-        registerButton.onclick = registerUser;
-        console.log('Обработчик кнопки регистрации добавлен');
-    } else {
-        console.error('Кнопка регистрации не найдена!');
-    }
+    if (registerButton) registerButton.onclick = registerUser;
     
-    // Добавляем кнопки в админ-панель
     setTimeout(() => {
         const adminControls = document.querySelector('.admin-controls');
         if (adminControls) {
@@ -1033,11 +936,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 100);
     
-    // Запускаем приложение
     initApp();
 });
 
-// Делаем функции глобальными для HTML onclick
+// Глобальные функции для HTML
 window.registerUser = registerUser;
 window.openStudentSelection = openStudentSelection;
 window.showPasswordModal = showPasswordModal;
