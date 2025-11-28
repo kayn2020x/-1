@@ -73,10 +73,69 @@ const nominations = [
 ];
 
 let votingResults = {};
-let userVotesHistory = {};
+let allUsersVotes = {};
 let currentNomination = null;
 let currentUser = null;
 const ADMIN_PASSWORD = "admin2024";
+
+// Функция для получения всех голосов всех пользователей
+function getAllUsersVotes() {
+    const allVotes = {};
+    
+    // Проходим по всем ключам localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        
+        // Ищем ключи с userVotes_
+        if (key.startsWith('userVotes_')) {
+            try {
+                const userVotes = JSON.parse(localStorage.getItem(key));
+                const userId = key.replace('userVotes_', '');
+                
+                // Получаем информацию о пользователе
+                const userInfo = JSON.parse(localStorage.getItem('currentUser_' + userId) || localStorage.getItem('currentUser'));
+                
+                if (userInfo && userVotes) {
+                    allVotes[userId] = {
+                        userName: userInfo.name,
+                        votes: userVotes
+                    };
+                }
+            } catch (e) {
+                console.log('Ошибка чтения голосов пользователя:', key);
+            }
+        }
+    }
+    
+    return allVotes;
+}
+
+// Функция для пересчета общих результатов
+function recalculateTotalResults() {
+    const allVotes = getAllUsersVotes();
+    const newResults = {};
+    
+    // Инициализируем структуру для результатов
+    nominations.forEach(nomination => {
+        newResults[nomination.id] = {};
+    });
+    
+    // Собираем все голоса
+    Object.values(allVotes).forEach(userData => {
+        Object.entries(userData.votes).forEach(([nominationId, studentName]) => {
+            if (studentName && newResults[nominationId]) {
+                if (!newResults[nominationId][studentName]) {
+                    newResults[nominationId][studentName] = 0;
+                }
+                newResults[nominationId][studentName]++;
+            }
+        });
+    });
+    
+    votingResults = newResults;
+    saveData();
+    return newResults;
+}
 
 function createSnowflakes() {
     const container = document.getElementById('snowflakes-container');
@@ -157,6 +216,8 @@ function initApp() {
     if (savedUser) {
         try {
             currentUser = JSON.parse(savedUser);
+            // Сохраняем информацию о пользователе отдельно для поиска
+            localStorage.setItem('currentUser_' + currentUser.id, savedUser);
             showVotingSection();
         } catch (e) {
             localStorage.removeItem('currentUser');
@@ -210,6 +271,8 @@ function registerUser() {
     };
     
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    // Сохраняем копию для поиска
+    localStorage.setItem('currentUser_' + currentUser.id, JSON.stringify(currentUser));
     
     showVotingSection();
     showNotification(`Добро пожаловать, ${userName}! Приятного голосования!`, 'success');
@@ -393,8 +456,6 @@ function confirmSelection() {
     
     const studentName = selectedCard.querySelector('.student-name').textContent;
     
-    saveVoteHistory(currentUser.id, currentUser.name, currentNomination, studentName);
-    
     updateUserVote(currentNomination, studentName);
     updateNominationDisplay(currentNomination, studentName);
     updateStats();
@@ -406,52 +467,18 @@ function confirmSelection() {
     currentNomination = null;
 }
 
-function saveVoteHistory(userId, userName, nominationId, studentName) {
-    if (!userVotesHistory[userId]) {
-        userVotesHistory[userId] = [];
-    }
-    
-    userVotesHistory[userId] = userVotesHistory[userId].filter(
-        vote => vote.nominationId !== nominationId
-    );
-    
-    userVotesHistory[userId].push({
-        userName: userName,
-        nominationId: nominationId,
-        nominationTitle: nominations.find(n => n.id === nominationId)?.title || nominationId,
-        studentName: studentName,
-        timestamp: new Date().toISOString()
-    });
-    
-    localStorage.setItem('userVotesHistory', JSON.stringify(userVotesHistory));
-}
-
 function updateUserVote(nominationId, studentName) {
     if (!currentUser) return;
     
     const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
     const previousVote = userVotes[nominationId];
     
-    if (!votingResults[nominationId]) {
-        votingResults[nominationId] = {};
-    }
-    
-    if (previousVote && votingResults[nominationId][previousVote]) {
-        votingResults[nominationId][previousVote]--;
-        if (votingResults[nominationId][previousVote] <= 0) {
-            delete votingResults[nominationId][previousVote];
-        }
-    }
-    
-    if (!votingResults[nominationId][studentName]) {
-        votingResults[nominationId][studentName] = 0;
-    }
-    votingResults[nominationId][studentName]++;
-    
+    // Сохраняем голос пользователя
     userVotes[nominationId] = studentName;
     localStorage.setItem(`userVotes_${currentUser.id}`, JSON.stringify(userVotes));
     
-    saveData();
+    // Пересчитываем общие результаты
+    recalculateTotalResults();
 }
 
 function updateNominationDisplay(nominationId, studentName) {
@@ -530,6 +557,9 @@ function showResults() {
     
     resultsGrid.innerHTML = '';
     
+    // Обновляем результаты перед показом
+    recalculateTotalResults();
+    
     nominations.forEach(nomination => {
         const resultItem = document.createElement('div');
         resultItem.className = 'result-item';
@@ -584,43 +614,36 @@ function showVoteDetails() {
     
     resultsGrid.innerHTML = '<h3 style="text-align: center; margin-bottom: 20px; color: #fff8f0;">Детали голосования</h3>';
     
-    const allVotes = {};
-    Object.keys(userVotesHistory).forEach(userId => {
-        userVotesHistory[userId].forEach(vote => {
-            if (!allVotes[vote.nominationId]) {
-                allVotes[vote.nominationId] = [];
-            }
-            allVotes[vote.nominationId].push({
-                userName: vote.userName,
-                studentName: vote.studentName
-            });
-        });
-    });
+    // Получаем все голоса всех пользователей
+    const allVotes = getAllUsersVotes();
     
     nominations.forEach(nomination => {
         const resultItem = document.createElement('div');
         resultItem.className = 'result-item';
         
-        const nominationVotes = allVotes[nomination.id] || [];
-        
         let resultsHTML = `
             <h4>${nomination.title}</h4>
-            <div class="results-stats">Всего голосов: ${nominationVotes.length}</div>
             <ul class="result-list">
         `;
         
-        if (nominationVotes.length > 0) {
-            nominationVotes.forEach(vote => {
+        let hasVotes = false;
+        
+        // Собираем голоса для этой номинации
+        Object.values(allVotes).forEach(userData => {
+            if (userData.votes[nomination.id]) {
+                hasVotes = true;
                 resultsHTML += `
                     <li>
-                        <span class="student-result-name">${vote.userName}</span>
+                        <span class="student-result-name">${userData.userName}</span>
                         <div class="result-details">
-                            <span style="color: #fff8f0;">→ ${vote.studentName}</span>
+                            <span style="color: #fff8f0;">→ ${userData.votes[nomination.id]}</span>
                         </div>
                     </li>
                 `;
-            });
-        } else {
+            }
+        });
+        
+        if (!hasVotes) {
             resultsHTML += '<li class="no-votes">Голосов пока нет</li>';
         }
         
@@ -641,6 +664,9 @@ function closeResults() {
 }
 
 function exportData() {
+    // Обновляем результаты перед экспортом
+    recalculateTotalResults();
+    
     let csvContent = "Номинация,Студент,Количество голосов,Процент\n";
     
     nominations.forEach(nomination => {
@@ -655,12 +681,16 @@ function exportData() {
             });
     });
     
+    const allVotes = getAllUsersVotes();
     csvContent += "\n\nДетали голосования:\n";
     csvContent += "Пользователь,Номинация,Выбранный студент\n";
     
-    Object.keys(userVotesHistory).forEach(userId => {
-        userVotesHistory[userId].forEach(vote => {
-            csvContent += `"${vote.userName}","${vote.nominationTitle}","${vote.studentName}"\n`;
+    Object.values(allVotes).forEach(userData => {
+        Object.entries(userData.votes).forEach(([nominationId, studentName]) => {
+            if (studentName) {
+                const nomination = nominations.find(n => n.id === nominationId);
+                csvContent += `"${userData.userName}","${nomination?.title || nominationId}","${studentName}"\n`;
+            }
         });
     });
     
@@ -680,10 +710,16 @@ function exportData() {
 
 function resetVoting() {
     if (confirm('ВНИМАНИЕ! Это действие сбросит ВСЕ данные голосования. Продолжить?')) {
+        // Удаляем только данные голосования, оставляя текущего пользователя
+        const currentUserBackup = localStorage.getItem('currentUser');
         localStorage.clear();
+        
+        if (currentUserBackup) {
+            localStorage.setItem('currentUser', currentUserBackup);
+        }
+        
         votingResults = {};
-        userVotesHistory = {};
-        currentUser = null;
+        allUsersVotes = {};
         
         showNotification('Все данные голосования сброшены!', 'success');
         setTimeout(() => {
@@ -705,6 +741,8 @@ function updateStats() {
         completedElement.textContent = `${completedNominations}/${nominations.length}`;
     }
     
+    // Обновляем общее количество голосов
+    recalculateTotalResults();
     let totalVotesCount = 0;
     Object.values(votingResults).forEach(nomination => {
         totalVotesCount += Object.values(nomination).reduce((sum, count) => sum + count, 0);
@@ -727,15 +765,9 @@ function loadSavedData() {
         } catch (e) {
             votingResults = {};
         }
-    }
-    
-    const savedHistory = localStorage.getItem('userVotesHistory');
-    if (savedHistory) {
-        try {
-            userVotesHistory = JSON.parse(savedHistory);
-        } catch (e) {
-            userVotesHistory = {};
-        }
+    } else {
+        // Если нет сохраненных результатов, пересчитываем
+        recalculateTotalResults();
     }
 }
 
