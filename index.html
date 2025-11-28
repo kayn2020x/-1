@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Премия ИСП 2025</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Снежинки -->
+    <div id="snowflakes-container"></div>
+
+    <!-- Основной контейнер -->
+    <div class="container">
+        <!-- Блок регистрации (показывается если пользователь не зарегистрирован) -->
+        <div id="registrationSection" class="registration-section">
+            <div class="header">
+                <div class="title-section">
+                    <h1>Премия ИСП 2025</h1>
+                    <p class="gold-subtitle">Выберите самых достойных в 9 номинациях!</p>
+                </div>
+            </div>
+            
+            <div class="auth-container">
+                <h2>Регистрация для голосования</h2>
+                <div class="form-group">
+                    <label for="userName">Ваше полное имя</label>
+                    <input type="text" id="userName" placeholder="Введите ваше настоящее имя">
+                    <div class="error-message" id="nameError">Пожалуйста, введите настоящее имя (минимум 2 слова)</div>
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">Email</label>
+                    <input type="email" id="userEmail" placeholder="example@college.ru">
+                    <div class="error-message" id="emailError">Пожалуйста, введите корректный email</div>
+                </div>
+                <button class="login-button btn-block" onclick="registerUser()">Зарегистрироваться и начать голосование</button>
+            </div>
+        </div>
+
+        <!-- Блок голосования (показывается после регистрации) -->
+        <div id="votingSection" class="voting-section" style="display: none;">
+            <div class="user-info" id="userInfo">
+                <span id="userNameDisplay"></span>
+                <button class="logout-button" onclick="logout()" title="Выйти">✕</button>
+            </div>
+
+            <div class="header">
+                <div class="title-section">
+                    <h1>Премия ИСП 2025</h1>
+                    <p class="gold-subtitle">Выберите самых достойных в 9 номинациях! Ваш голос очень важен!</p>
+                </div>
+                <div class="stats-section">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalVotes">0</div>
+                        <div class="stat-label">Всего голосов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="completedNominations">0/9</div>
+                        <div class="stat-label">Ваши голоса</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nominations-container">
+                <div class="main-nominations">
+                    <h2 class="section-title">Главные номинации</h2>
+                    <div class="nominations-grid main-grid" id="mainNominationsContainer">
+                        <!-- Главные номинации -->
+                    </div>
+                </div>
+                
+                <div class="other-nominations">
+                    <h2 class="section-title">Другие номинации</h2>
+                    <div class="nominations-grid other-grid" id="otherNominationsContainer">
+                        <!-- Остальные номинации -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-panel">
+                <span>Панель организатора</span>
+                <div>
+                    <button class="admin-button" onclick="showPasswordModal()">Посмотреть результаты</button>
+                    <button class="admin-button" onclick="exportData()">Экспорт данных</button>
+                    <button class="admin-button" onclick="resetVoting()" style="margin-left: 10px;">Сбросить голосование</button>
+                </div>
+            </div>
+
+            <div class="contact-info">
+                <p>По вопросам обращайтесь: <strong>organizer@isp-college.ru</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для выбора студента -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="modal-title" id="modalTitle">Выбор победителя</h2>
+            <div class="students-grid" id="studentsGrid">
+                <!-- Студенты будут добавлены через JavaScript -->
+            </div>
+            <button class="confirm-button btn-block" id="confirmSelection" disabled>Подтвердить выбор</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно для ввода пароля -->
+    <div id="passwordModal" class="modal password-modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closePasswordModal()">&times;</span>
+            <h2 class="modal-title">Введите пароль</h2>
+            <div class="form-group">
+                <input type="password" id="adminPassword" placeholder="Введите пароль администратора" style="text-align: center; font-size: 1.2em;">
+            </div>
+            <button class="confirm-button btn-block" onclick="checkAdminPassword()">Войти</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно результатов -->
+    <div id="resultsModal" class="modal results-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeResults()">&times;</span>
+            <h2 class="modal-title">Результаты голосования</h2>
+            <div class="results-grid" id="resultsGrid">
+                <!-- Результаты будут добавлены через JavaScript -->
+            </div>
+            <div style="text-align: center; margin-top: 35px;">
+                <button class="admin-button" onclick="exportData()">Экспорт в CSV</button>
+                <button class="admin-button" onclick="resetVoting()" style="margin-left: 10px;">Сбросить все данные</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
