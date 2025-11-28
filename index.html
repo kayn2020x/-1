@@ -14,7 +14,7 @@
             <div class="header">
                 <div class="title-section">
                     <h1>Премия ИСП 2025</h1>
-                    <p class="gold-subtitle">Выберите самых достойных в 9 номинациях!</p>
+                    <p class="gold-subtitle">Выберите самых достойных в 8 номинациях!</p>
                 </div>
             </div>
             
@@ -37,13 +37,13 @@
         <div id="votingSection" class="voting-section" style="display: none;">
             <div class="user-info" id="userInfo">
                 <span id="userNameDisplay"></span>
-                <button class="logout-button" onclick="logout()" title="Выйти">✕</button>
+                <span class="user-email" id="userEmailDisplay"></span>
             </div>
 
             <div class="header">
                 <div class="title-section">
                     <h1>Премия ИСП 2025</h1>
-                    <p class="gold-subtitle">Выберите самых достойных в 9 номинациях! Ваш голос очень важен!</p>
+                    <p class="gold-subtitle">Выберите самых достойных в 8 номинациях! Ваш голос очень важен!</p>
                 </div>
                 <div class="stats-section">
                     <div class="stat-card">
@@ -51,7 +51,7 @@
                         <div class="stat-label">Всего голосов</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="completedNominations">0/9</div>
+                        <div class="stat-number" id="completedNominations">0/8</div>
                         <div class="stat-label">Ваши голоса</div>
                     </div>
                 </div>
@@ -105,9 +105,10 @@
             <button class="logout-button" onclick="hideAdminPanel()">✕</button>
         </div>
         <div class="admin-controls">
-            <button class="admin-button" onclick="showResults()">📊 Посмотреть результаты</button>
-            <button class="admin-button" onclick="exportData()">💾 Экспорт данных</button>
-            <button class="admin-button" onclick="resetVoting()">🔄 Сбросить все данные</button>
+            <button class="admin-button" onclick="showResults()">Посмотреть результаты</button>
+            <button class="admin-button" onclick="exportData()">Экспорт данных</button>
+            <button class="admin-button" onclick="showVotingHistory()">История голосований</button>
+            <button class="admin-button" onclick="resetVoting()">Сбросить все данные</button>
         </div>
     </div>
 
@@ -116,6 +117,14 @@
             <span class="close" onclick="closeResults()">&times;</span>
             <h2 class="modal-title">Результаты голосования</h2>
             <div class="results-grid" id="resultsGrid"></div>
+        </div>
+    </div>
+
+    <div id="historyModal" class="modal history-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeHistory()">&times;</span>
+            <h2 class="modal-title">История голосований</h2>
+            <div class="history-content" id="historyContent"></div>
         </div>
     </div>
 

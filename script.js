@@ -170,6 +170,7 @@ function showVotingSection() {
     document.getElementById('votingSection').style.display = 'block';
     
     document.getElementById('userNameDisplay').textContent = currentUser.name;
+    document.getElementById('userEmailDisplay').textContent = currentUser.email;
     
     renderNominations();
     setupModal();
@@ -482,6 +483,57 @@ function closeResults() {
     }
 }
 
+function showVotingHistory() {
+    const modal = document.getElementById('historyModal');
+    const historyContent = document.getElementById('historyContent');
+    
+    if (!modal || !historyContent) return;
+    
+    historyContent.innerHTML = '';
+    
+    const allUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    let hasVotes = false;
+    
+    Object.entries(allUsers).forEach(([email, user]) => {
+        const userVotes = JSON.parse(localStorage.getItem(`userVotes_${user.id}`) || '{}');
+        const votedNominations = Object.entries(userVotes).filter(([_, student]) => student);
+        
+        if (votedNominations.length > 0) {
+            hasVotes = true;
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            
+            let votesHTML = `<div class="history-user">${user.name} (${email})</div>`;
+            votesHTML += '<div class="history-votes">';
+            
+            votedNominations.forEach(([nominationId, student]) => {
+                const nomination = nominations.find(n => n.id === nominationId);
+                if (nomination) {
+                    votesHTML += `<div class="history-vote"><strong>${nomination.title}:</strong> ${student}</div>`;
+                }
+            });
+            
+            votesHTML += '</div>';
+            historyItem.innerHTML = votesHTML;
+            historyContent.appendChild(historyItem);
+        }
+    });
+    
+    if (!hasVotes) {
+        historyContent.innerHTML = '<div class="no-votes">История голосований пока пуста</div>';
+    }
+    
+    modal.style.display = 'block';
+    hideAdminPanel();
+}
+
+function closeHistory() {
+    const modal = document.getElementById('historyModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 function exportData() {
     let csvContent = "Номинация,Студент,Количество голосов,Процент\n";
     
@@ -507,13 +559,6 @@ function exportData() {
     
     showNotification('Данные экспортированы в CSV!', 'success');
     hideAdminPanel();
-}
-
-function logout() {
-    if (confirm('Вы уверены, что хотите выйти? Вы сможете зарегистрироваться снова.')) {
-        localStorage.removeItem('currentUser');
-        location.reload();
-    }
 }
 
 function resetVoting() {

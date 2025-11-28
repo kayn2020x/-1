@@ -771,3 +771,89 @@ body {
         grid-template-columns: repeat(3, 1fr);
     }
 }
+/* Добавь эти стили в конец файла */
+
+.user-info {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    background: rgba(146, 20, 12, 0.25);
+    padding: 15px 20px;
+    border-radius: 12px;
+    border: 2px solid rgba(146, 20, 12, 0.5);
+    font-size: 1em;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-end;
+    max-width: 300px;
+}
+
+.user-email {
+    font-size: 0.8em;
+    color: rgba(255, 248, 240, 0.7);
+    font-weight: 400;
+}
+
+.history-content {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 20px;
+    background: rgba(255, 248, 240, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(146, 20, 12, 0.3);
+}
+
+.history-item {
+    background: rgba(255, 248, 240, 0.08);
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border-left: 4px solid rgba(146, 20, 12, 0.6);
+}
+
+.history-user {
+    font-weight: 600;
+    color: #fff8f0;
+    margin-bottom: 5px;
+}
+
+.history-votes {
+    font-size: 0.9em;
+    color: rgba(255, 248, 240, 0.8);
+}
+
+.history-vote {
+    margin: 3px 0;
+    padding-left: 10px;
+}
+
+.nominations-grid.other-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 25px;
+    max-width: 1300px;
+    margin: 0 auto;
+}
+
+@media (max-width: 1200px) {
+    .nominations-grid.other-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .nominations-grid.other-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .user-info {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin: 0 auto 20px;
+        align-items: center;
+        max-width: 100%;
+    }
+}
