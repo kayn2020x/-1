@@ -37,7 +37,6 @@
         <div id="votingSection" class="voting-section" style="display: none;">
             <div class="user-info" id="userInfo">
                 <span id="userNameDisplay"></span>
-                <span class="user-email" id="userEmailDisplay"></span>
             </div>
 
             <div class="header">
@@ -89,11 +88,11 @@
     </div>
 
     <div id="passwordModal" class="modal password-modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content">
             <span class="close" onclick="closePasswordModal()">&times;</span>
             <h2 class="modal-title">Введите пароль администратора</h2>
             <div class="form-group">
-                <input type="password" id="adminPassword" placeholder="Введите пароль" style="text-align: center; font-size: 1.2em;">
+                <input type="password" id="adminPassword" placeholder="Введите пароль" style="text-align: center;">
             </div>
             <button class="confirm-button btn-block" onclick="checkAdminPassword()">Войти</button>
         </div>
@@ -102,12 +101,11 @@
     <div id="adminPanel" class="admin-panel" style="display: none;">
         <div class="admin-header">
             <h2>Панель организатора</h2>
-            <button class="logout-button" onclick="hideAdminPanel()">✕</button>
+            <button class="close-admin" onclick="hideAdminPanel()">✕</button>
         </div>
         <div class="admin-controls">
             <button class="admin-button" onclick="showResults()">Посмотреть результаты</button>
             <button class="admin-button" onclick="exportData()">Экспорт данных</button>
-            <button class="admin-button" onclick="showVotingHistory()">История голосований</button>
             <button class="admin-button" onclick="resetVoting()">Сбросить все данные</button>
         </div>
     </div>
@@ -117,14 +115,6 @@
             <span class="close" onclick="closeResults()">&times;</span>
             <h2 class="modal-title">Результаты голосования</h2>
             <div class="results-grid" id="resultsGrid"></div>
-        </div>
-    </div>
-
-    <div id="historyModal" class="modal history-modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeHistory()">&times;</span>
-            <h2 class="modal-title">История голосований</h2>
-            <div class="history-content" id="historyContent"></div>
         </div>
     </div>
 

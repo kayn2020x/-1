@@ -77,23 +77,23 @@ const ADMIN_PASSWORD = "admin2024";
 
 function createSnowflakes() {
     const container = document.getElementById('snowflakes-container');
-    const snowflakeCount = 60;
+    const snowflakeCount = 20;
     
     for (let i = 0; i < snowflakeCount; i++) {
         const snowflake = document.createElement('div');
         snowflake.classList.add('snowflake');
         snowflake.innerHTML = '❄';
         snowflake.style.left = Math.random() * 100 + 'vw';
-        snowflake.style.animationDuration = Math.random() * 5 + 5 + 's';
-        snowflake.style.opacity = Math.random() * 0.6 + 0.4;
-        snowflake.style.fontSize = Math.random() * 12 + 12 + 'px';
+        snowflake.style.animationDuration = (Math.random() * 3 + 3) + 's';
+        snowflake.style.opacity = Math.random() * 0.3 + 0.2;
+        snowflake.style.fontSize = (Math.random() * 8 + 8) + 'px';
         container.appendChild(snowflake);
         
         setTimeout(() => {
             if (snowflake.parentNode) {
                 snowflake.remove();
             }
-        }, 10000);
+        }, 6000);
     }
 }
 
@@ -139,7 +139,7 @@ function validateForm() {
 
 function initApp() {
     createSnowflakes();
-    setInterval(createSnowflakes, 500);
+    setInterval(createSnowflakes, 2000);
     
     const userNameInput = document.getElementById('userName');
     const userEmailInput = document.getElementById('userEmail');
@@ -170,7 +170,6 @@ function showVotingSection() {
     document.getElementById('votingSection').style.display = 'block';
     
     document.getElementById('userNameDisplay').textContent = currentUser.name;
-    document.getElementById('userEmailDisplay').textContent = currentUser.email;
     
     renderNominations();
     setupModal();
@@ -201,7 +200,7 @@ function registerUser() {
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     
     showVotingSection();
-    showNotification(`Добро пожаловать, ${userName}! Приятного голосования!`, 'success');
+    showNotification(`Добро пожаловать, ${userName}!`, 'success');
 }
 
 function renderNominations() {
@@ -213,16 +212,13 @@ function renderNominations() {
     mainContainer.innerHTML = '';
     otherContainer.innerHTML = '';
 
-    const otherNominations = nominations.filter(n => !n.isMain);
-    
-    nominations.filter(n => n.isMain).forEach((nomination, index) => {
+    nominations.forEach((nomination) => {
         const card = createNominationCard(nomination);
-        mainContainer.appendChild(card);
-    });
-    
-    otherNominations.forEach((nomination, index) => {
-        const card = createNominationCard(nomination);
-        otherContainer.appendChild(card);
+        if (nomination.isMain) {
+            mainContainer.appendChild(card);
+        } else {
+            otherContainer.appendChild(card);
+        }
     });
 }
 
@@ -291,7 +287,7 @@ function openStudentSelection(nominationId) {
     const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
     const currentSelection = userVotes[nominationId];
 
-    students.forEach((student, index) => {
+    students.forEach((student) => {
         const studentCard = document.createElement('div');
         studentCard.className = 'student-card';
         
@@ -326,347 +322,9 @@ function selectStudent(student, cardElement) {
     
     cardElement.classList.add('selected');
     confirmBtn.disabled = false;
-
-    cardElement.style.transform = 'scale(0.95)';
-    setTimeout(() => {
-        cardElement.style.transform = 'scale(1.08)';
-    }, 150);
-    setTimeout(() => {
-        cardElement.style.transform = 'scale(1.05)';
-    }, 300);
 }
 
 function confirmSelection() {
     if (currentNomination) {
         const selectedCard = document.querySelector('.student-card.selected');
-        if (!selectedCard) return;
-        
-        const studentName = selectedCard.querySelector('.student-name').textContent;
-        
-        updateUserVote(currentNomination, studentName);
-        updateNominationDisplay(currentNomination, studentName);
-        updateStats();
-        
-        showNotification(`Вы выбрали: ${studentName}`, 'success');
-        const modal = document.getElementById('studentModal');
-        modal.style.display = 'none';
-    }
-}
-
-function updateUserVote(nominationId, studentName) {
-    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
-    const previousVote = userVotes[nominationId];
-    
-    if (!votingResults[nominationId]) {
-        votingResults[nominationId] = {};
-    }
-    
-    if (previousVote && votingResults[nominationId][previousVote]) {
-        votingResults[nominationId][previousVote]--;
-        if (votingResults[nominationId][previousVote] <= 0) {
-            delete votingResults[nominationId][previousVote];
-        }
-    }
-    
-    if (!votingResults[nominationId][studentName]) {
-        votingResults[nominationId][studentName] = 0;
-    }
-    votingResults[nominationId][studentName]++;
-    
-    userVotes[nominationId] = studentName;
-    localStorage.setItem(`userVotes_${currentUser.id}`, JSON.stringify(userVotes));
-    
-    saveData();
-}
-
-function updateNominationDisplay(nominationId, studentName) {
-    const selectedDiv = document.getElementById(`selected-${nominationId}`);
-    const selectedName = document.getElementById(`selected-name-${nominationId}`);
-    const voteButton = document.querySelector(`button[onclick="openStudentSelection('${nominationId}')"]`);
-    
-    if (selectedDiv && selectedName && voteButton) {
-        selectedName.textContent = studentName;
-        selectedDiv.style.display = 'flex';
-        voteButton.textContent = 'Изменить выбор';
-    }
-}
-
-function showPasswordModal() {
-    const modal = document.getElementById('passwordModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
-}
-
-function closePasswordModal() {
-    const modal = document.getElementById('passwordModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-function checkAdminPassword() {
-    const passwordInput = document.getElementById('adminPassword');
-    if (!passwordInput) return;
-    
-    const password = passwordInput.value;
-    if (password === ADMIN_PASSWORD) {
-        closePasswordModal();
-        showAdminPanel();
-    } else {
-        showNotification('Неверный пароль!', 'error');
-    }
-}
-
-function showAdminPanel() {
-    document.getElementById('adminPanel').style.display = 'block';
-}
-
-function hideAdminPanel() {
-    document.getElementById('adminPanel').style.display = 'none';
-}
-
-function showResults() {
-    const modal = document.getElementById('resultsModal');
-    const resultsGrid = document.getElementById('resultsGrid');
-    
-    if (!modal || !resultsGrid) return;
-    
-    resultsGrid.innerHTML = '';
-    
-    nominations.forEach(nomination => {
-        const resultItem = document.createElement('div');
-        resultItem.className = 'result-item';
-        
-        const nominationResults = votingResults[nomination.id] || {};
-        const totalVotes = Object.values(nominationResults).reduce((sum, count) => sum + count, 0);
-        const sortedResults = Object.entries(nominationResults)
-            .sort(([,a], [,b]) => b - a)
-            .slice(0, 5);
-        
-        let resultsHTML = `<h4>${nomination.title}</h4>`;
-        resultsHTML += `<div class="progress-bar"><div class="progress-fill" style="width: ${totalVotes > 0 ? '100%' : '0%'}"></div></div>`;
-        resultsHTML += `<div class="results-stats">Всего голосов: ${totalVotes}</div>`;
-        resultsHTML += '<ul class="result-list">';
-        
-        if (sortedResults.length > 0) {
-            sortedResults.forEach(([student, votes], index) => {
-                const percentage = totalVotes > 0 ? (votes / totalVotes * 100).toFixed(1) : 0;
-                const isLeading = index === 0;
-                resultsHTML += `
-                    <li class="${isLeading ? 'leading' : ''}">
-                        <span class="student-result-name">${student}</span>
-                        <div class="result-details">
-                            <span style="margin-right: 10px; color: #fff8f0;">${percentage}%</span>
-                            <span class="vote-count">${votes}</span>
-                        </div>
-                    </li>
-                `;
-            });
-        } else {
-            resultsHTML += '<li class="no-votes">Голосов пока нет</li>';
-        }
-        
-        resultsHTML += '</ul>';
-        resultItem.innerHTML = resultsHTML;
-        resultsGrid.appendChild(resultItem);
-    });
-    
-    modal.style.display = 'block';
-    hideAdminPanel();
-}
-
-function closeResults() {
-    const modal = document.getElementById('resultsModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-function showVotingHistory() {
-    const modal = document.getElementById('historyModal');
-    const historyContent = document.getElementById('historyContent');
-    
-    if (!modal || !historyContent) return;
-    
-    historyContent.innerHTML = '';
-    
-    const allUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    let hasVotes = false;
-    
-    Object.entries(allUsers).forEach(([email, user]) => {
-        const userVotes = JSON.parse(localStorage.getItem(`userVotes_${user.id}`) || '{}');
-        const votedNominations = Object.entries(userVotes).filter(([_, student]) => student);
-        
-        if (votedNominations.length > 0) {
-            hasVotes = true;
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
-            
-            let votesHTML = `<div class="history-user">${user.name} (${email})</div>`;
-            votesHTML += '<div class="history-votes">';
-            
-            votedNominations.forEach(([nominationId, student]) => {
-                const nomination = nominations.find(n => n.id === nominationId);
-                if (nomination) {
-                    votesHTML += `<div class="history-vote"><strong>${nomination.title}:</strong> ${student}</div>`;
-                }
-            });
-            
-            votesHTML += '</div>';
-            historyItem.innerHTML = votesHTML;
-            historyContent.appendChild(historyItem);
-        }
-    });
-    
-    if (!hasVotes) {
-        historyContent.innerHTML = '<div class="no-votes">История голосований пока пуста</div>';
-    }
-    
-    modal.style.display = 'block';
-    hideAdminPanel();
-}
-
-function closeHistory() {
-    const modal = document.getElementById('historyModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-function exportData() {
-    let csvContent = "Номинация,Студент,Количество голосов,Процент\n";
-    
-    nominations.forEach(nomination => {
-        const results = votingResults[nomination.id] || {};
-        const totalVotes = Object.values(results).reduce((sum, count) => sum + count, 0);
-        
-        Object.entries(results).forEach(([student, votes]) => {
-            const percentage = totalVotes > 0 ? (votes / totalVotes * 100).toFixed(2) : 0;
-            csvContent += `"${nomination.title}","${student}",${votes},${percentage}%\n`;
-        });
-    });
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'результаты_голосования_исп2025.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    showNotification('Данные экспортированы в CSV!', 'success');
-    hideAdminPanel();
-}
-
-function resetVoting() {
-    if (confirm('ВНИМАНИЕ! Это действие сбросит ВСЕ данные голосования. Продолжить?')) {
-        localStorage.removeItem('votingResults');
-        localStorage.removeItem('registeredUsers');
-        localStorage.removeItem('currentUser');
-        
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('userVotes_')) {
-                localStorage.removeItem(key);
-            }
-        });
-        
-        showNotification('Все данные голосования сброшены!', 'success');
-        setTimeout(() => {
-            location.reload();
-        }, 2000);
-    }
-}
-
-function updateStats() {
-    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
-    const completedNominations = Object.values(userVotes).filter(v => v).length;
-    
-    const completedElement = document.getElementById('completedNominations');
-    const totalVotesElement = document.getElementById('totalVotes');
-    
-    if (completedElement) {
-        completedElement.textContent = `${completedNominations}/${nominations.length}`;
-    }
-    
-    let totalVotesCount = 0;
-    Object.values(votingResults).forEach(nomination => {
-        totalVotesCount += Object.values(nomination).reduce((sum, count) => sum + count, 0);
-    });
-    
-    if (totalVotesElement) {
-        totalVotesElement.textContent = totalVotesCount;
-    }
-}
-
-function saveData() {
-    localStorage.setItem('votingResults', JSON.stringify(votingResults));
-}
-
-function loadSavedData() {
-    const saved = localStorage.getItem('votingResults');
-    if (saved) {
-        votingResults = JSON.parse(saved);
-    }
-}
-
-function showNotification(message, type = 'info') {
-    if (!document.querySelector('#notification-styles')) {
-        const styles = `
-            .notification {
-                position: fixed;
-                top: 25px;
-                right: 25px;
-                padding: 18px 24px;
-                border-radius: 12px;
-                color: #fff8f0;
-                font-weight: 600;
-                z-index: 10000;
-                transform: translateX(400px);
-                transition: transform 0.4s ease;
-                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-                border: 2px solid rgba(146, 20, 12, 0.7);
-                font-size: 1.1em;
-            }
-            .notification.show {
-                transform: translateX(0);
-            }
-            .notification-success {
-                background: linear-gradient(135deg, #1e1e24, rgba(40, 167, 69, 0.8));
-            }
-            .notification-error {
-                background: linear-gradient(135deg, #1e1e24, rgba(220, 53, 69, 0.8));
-            }
-            .notification-info {
-                background: linear-gradient(135deg, #1e1e24, rgba(146, 20, 12, 0.8));
-            }
-        `;
-        const styleSheet = document.createElement('style');
-        styleSheet.id = 'notification-styles';
-        styleSheet.textContent = styles;
-        document.head.appendChild(styleSheet);
-    }
-
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 100);
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            if (notification.parentNode) {
-                document.body.removeChild(notification);
-            }
-        }, 400);
-    }, 4000);
-}
-
-document.addEventListener('DOMContentLoaded', initApp);
+        if (!selectedCard)
