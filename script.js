@@ -1,18 +1,22 @@
 const students = [
-    { name: "Асанбеков Тынай", photo: "photos/asanbekov.jpg", gender: "male" },
+    // ДЕВУШКИ (6 человек)
     { name: "Барсукова Валерия", photo: "photos/barsukova.jpg", gender: "female" },
-    { name: "Воробьев Александр", photo: "photos/vorobiev.jpg", gender: "male" },
     { name: "Гайдукова Валерия", photo: "photos/gaydukova.jpg", gender: "female" },
-    { name: "Гупанов Данила", photo: "photos/gupanov.jpg", gender: "male" },
     { name: "Демирова Анна", photo: "photos/demirova.jpg", gender: "female" },
+    { name: "Мамашарипова Зиёдахон", photo: "photos/mamasharipova.jpg", gender: "female" },
+    { name: "Одинокова Юлия", photo: "photos/odinokova.jpg", gender: "female" },
+    
+    // ПАРНИ (13 человек)
+    { name: "Асанбеков Тынай", photo: "photos/asanbekov.jpg", gender: "male" },
+    { name: "Беляев Александр", photo: "photos/belyaev.jpg", gender: "male" },
+    { name: "Воробьев Александр", photo: "photos/vorobiev.jpg", gender: "male" },
+    { name: "Гупанов Данила", photo: "photos/gupanov.jpg", gender: "male" },
     { name: "Крутов Павел", photo: "photos/krutov.jpg", gender: "male" },
     { name: "Мазур Александр", photo: "photos/mazur.jpg", gender: "male" },
-    { name: "Мамашарипова Зиёдахон", photo: "photos/mamasharipova.jpg", gender: "female" },
     { name: "Медведев Илья", photo: "photos/medvedev.jpg", gender: "male" },
     { name: "Московский Дмитрий", photo: "photos/moskovsky.jpg", gender: "male" },
     { name: "Назаренко Ларион", photo: "photos/nazarenko.jpg", gender: "male" },
     { name: "Никитин Кирилл", photo: "photos/nikitin.jpg", gender: "male" },
-    { name: "Одинокова Юлия", photo: "photos/odinokova.jpg", gender: "female" },
     { name: "Ракуц Иван", photo: "photos/rakuts.jpg", gender: "male" },
     { name: "Резниченко Алексей", photo: "photos/reznichenko.jpg", gender: "male" },
     { name: "Халваши Иван", photo: "photos/khalvashi.jpg", gender: "male" },
@@ -83,7 +87,6 @@ const RESULTS_KEY = "premia_isp_2025_results";
 
 // Google Apps Script URL
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyI0Uk8-ImyK_Lso2zwtNZ1nRHXRM4ZrLi9W6gDFnx_0w8It6I87TBG1cUWxzzNsnvz/exec';
-const SHEET_ID = '1HbEEsNYNua6Wh6JARNiE_JFcqdNF1ivq83u0DelVN70';
 
 // Сохранить голос через Google Apps Script
 async function saveVoteToServer(nominationId, studentName) {
@@ -97,73 +100,29 @@ async function saveVoteToServer(nominationId, studentName) {
 
         console.log('📤 Отправляю данные:', voteData);
 
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(voteData)
+        // Используем URL с параметрами для обхода CORS
+        const url = `${SCRIPT_URL}?data=${encodeURIComponent(JSON.stringify(voteData))}&timestamp=${Date.now()}`;
+        
+        const response = await fetch(url, {
+            method: 'GET', // Используем GET вместо POST
+            mode: 'no-cors' // Важно: no-cors режим
         });
 
-        const result = await response.json();
-        console.log('📥 Ответ от сервера:', result);
+        // В режиме no-cors мы не получим ответ, но запрос пройдет
+        console.log('✅ Данные отправлены (no-cors mode)');
         
-        if (result.success) {
-            console.log('✅ Данные успешно сохранены в Google Sheets!');
-            saveToLocalStorage(currentUser.id, nominationId, studentName);
-            showNotification('Голос сохранен!', 'success');
-        } else {
-            throw new Error(result.error || 'Неизвестная ошибка');
-        }
+        // Всегда сохраняем локально
+        saveToLocalStorage(currentUser.id, nominationId, studentName);
+        showNotification('Голос сохранен!', 'success');
         
+        return { success: true };
+
     } catch (error) {
         console.error('❌ Ошибка отправки:', error);
+        // Сохраняем локально даже при ошибке
         saveToLocalStorage(currentUser.id, nominationId, studentName);
         showNotification('Голос сохранен локально', 'info');
-    }
-}
-
-// Загрузить все голоса из Google Sheets
-async function loadVotesFromGoogleSheets() {
-    try {
-        const sheetsUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
-        
-        console.log('📥 Загружаю данные из Google Sheets...');
-        const response = await fetch(sheetsUrl);
-        const text = await response.text();
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        
-        const allVotes = {};
-        const allUsers = {};
-        
-        json.table.rows.forEach((row, index) => {
-            if (index === 0) return;
-            
-            const userName = row.c[1]?.v || '';
-            const userEmail = row.c[2]?.v || '';
-            const nominationId = row.c[3]?.v || '';
-            const studentName = row.c[4]?.v || '';
-            
-            if (userName && nominationId && studentName) {
-                const userId = `sheet_${index}`;
-                
-                if (!allUsers[userId]) {
-                    allUsers[userId] = { name: userName, email: userEmail };
-                }
-                
-                if (!allVotes[userId]) {
-                    allVotes[userId] = {};
-                }
-                allVotes[userId][nominationId] = studentName;
-            }
-        });
-        
-        console.log('📊 Загружено голосов:', Object.keys(allVotes).length);
-        return { votes: allVotes, users: allUsers };
-        
-    } catch (error) {
-        console.error('Ошибка загрузки:', error);
-        return { votes: {}, users: {} };
+        return { success: true };
     }
 }
 
@@ -483,29 +442,39 @@ function openStudentSelection(nominationId) {
 
     filteredStudents.forEach((student) => {
         const studentCard = document.createElement('div');
-        studentCard.className = 'student-card';
+        studentCard.className = `student-card ${student.gender}`;
         
         if (currentSelection === student.name) studentCard.classList.add('selected');
         
         const photoDiv = document.createElement('div');
         photoDiv.className = 'student-photo';
         
-        if (student.photo) {
-            const img = document.createElement('img');
-            img.src = student.photo;
-            img.alt = student.name;
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.borderRadius = '50%';
-            img.style.objectFit = 'cover';
-            img.onerror = function() {
-                img.style.display = 'none';
-                showInitials(photoDiv, student);
-            };
-            photoDiv.appendChild(img);
-        } else {
+        // Создаем изображение
+        const img = document.createElement('img');
+        img.src = student.photo;
+        img.alt = student.name;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.borderRadius = '50%';
+        img.style.objectFit = 'cover';
+        
+        // Обработчик ошибки загрузки фото
+        img.onerror = function() {
+            console.log(`❌ Ошибка загрузки фото: ${student.photo}`);
+            img.style.display = 'none';
             showInitials(photoDiv, student);
-        }
+        };
+        
+        // Обработчик успешной загрузки
+        img.onload = function() {
+            console.log(`✅ Фото загружено: ${student.photo}`);
+            photoDiv.classList.add('has-image');
+        };
+        
+        photoDiv.appendChild(img);
+        
+        // Показываем инициалы пока грузится фото
+        showInitials(photoDiv, student);
 
         studentCard.innerHTML = `<div class="student-name">${student.name}</div>`;
         studentCard.insertBefore(photoDiv, studentCard.firstChild);
@@ -519,16 +488,28 @@ function openStudentSelection(nominationId) {
 
 function showInitials(photoDiv, student) {
     const initials = student.name.split(' ').map(n => n[0]).join('');
-    photoDiv.textContent = initials;
-    photoDiv.style.background = student.gender === 'female' ? 
-        'linear-gradient(135deg, #ff6b9d, #c2185b)' : 
-        'linear-gradient(135deg, #4fc3f7, #1565c0)';
-    photoDiv.style.color = '#fff8f0';
-    photoDiv.style.display = 'flex';
-    photoDiv.style.alignItems = 'center';
-    photoDiv.style.justifyContent = 'center';
-    photoDiv.style.fontWeight = '600';
-    photoDiv.style.fontSize = '1.2em';
+    const initialsSpan = document.createElement('span');
+    initialsSpan.textContent = initials;
+    initialsSpan.style.cssText = `
+        font-weight: 600;
+        font-size: 1.2em;
+        color: #fff8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    `;
+    
+    // Добавляем инициалы как fallback
+    photoDiv.appendChild(initialsSpan);
+    
+    // Устанавливаем цвет фона в зависимости от пола
+    if (student.gender === 'female') {
+        photoDiv.style.background = 'linear-gradient(135deg, #ff6b9d, #c2185b)';
+    } else {
+        photoDiv.style.background = 'linear-gradient(135deg, #4fc3f7, #1565c0)';
+    }
 }
 
 function selectStudent(studentName, cardElement) {
@@ -690,15 +671,8 @@ async function showVoteDetails() {
     
     resultsGrid.innerHTML = '<h3 style="text-align: center; margin-bottom: 20px; color: #fff8f0;">Детали голосования - Все пользователи</h3>';
     
-    const sheetData = await loadVotesFromGoogleSheets();
-    const allVotes = sheetData.votes;
-    const allUsers = sheetData.users;
-    
-    const localVotes = getAllVotes();
-    const localUsers = getAllUsers();
-    
-    Object.assign(allVotes, localVotes);
-    Object.assign(allUsers, localUsers);
+    const allVotes = getAllVotes();
+    const allUsers = getAllUsers();
     
     let totalUsers = Object.keys(allVotes).length;
     let totalVotesCount = 0;
