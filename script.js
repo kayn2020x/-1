@@ -73,46 +73,60 @@ const nominations = [
 ];
 
 let votingResults = {};
-let allUsersVotes = {};
 let currentNomination = null;
 let currentUser = null;
 const ADMIN_PASSWORD = "admin2024";
 
-// Функция для получения всех голосов всех пользователей
-function getAllUsersVotes() {
-    const allVotes = {};
+// Ключ для хранения всех голосов в одном месте
+const ALL_VOTES_KEY = "all_votes_data";
+const USERS_KEY = "registered_users";
+
+// Функция для получения ВСЕХ голосов всех пользователей
+function getAllVotesData() {
+    const data = localStorage.getItem(ALL_VOTES_KEY);
+    return data ? JSON.parse(data) : {};
+}
+
+// Функция для сохранения ВСЕХ голосов
+function saveAllVotesData(data) {
+    localStorage.setItem(ALL_VOTES_KEY, JSON.stringify(data));
+}
+
+// Функция для получения всех зарегистрированных пользователей
+function getAllUsers() {
+    const users = localStorage.getItem(USERS_KEY);
+    return users ? JSON.parse(users) : {};
+}
+
+// Функция для сохранения пользователя
+function saveUser(user) {
+    const users = getAllUsers();
+    users[user.id] = {
+        name: user.name,
+        email: user.email,
+        registeredAt: user.registeredAt
+    };
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+// Функция для сохранения голоса пользователя
+function saveUserVote(userId, nominationId, studentName) {
+    const allVotes = getAllVotesData();
     
-    // Проходим по всем ключам localStorage
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        
-        // Ищем ключи с userVotes_
-        if (key.startsWith('userVotes_')) {
-            try {
-                const userVotes = JSON.parse(localStorage.getItem(key));
-                const userId = key.replace('userVotes_', '');
-                
-                // Получаем информацию о пользователе
-                const userInfo = JSON.parse(localStorage.getItem('currentUser_' + userId) || localStorage.getItem('currentUser'));
-                
-                if (userInfo && userVotes) {
-                    allVotes[userId] = {
-                        userName: userInfo.name,
-                        votes: userVotes
-                    };
-                }
-            } catch (e) {
-                console.log('Ошибка чтения голосов пользователя:', key);
-            }
-        }
+    if (!allVotes[userId]) {
+        allVotes[userId] = {};
     }
     
-    return allVotes;
+    allVotes[userId][nominationId] = studentName;
+    saveAllVotesData(allVotes);
+    
+    // Пересчитываем общие результаты
+    recalculateTotalResults();
 }
 
 // Функция для пересчета общих результатов
 function recalculateTotalResults() {
-    const allVotes = getAllUsersVotes();
+    const allVotes = getAllVotesData();
     const newResults = {};
     
     // Инициализируем структуру для результатов
@@ -121,8 +135,8 @@ function recalculateTotalResults() {
     });
     
     // Собираем все голоса
-    Object.values(allVotes).forEach(userData => {
-        Object.entries(userData.votes).forEach(([nominationId, studentName]) => {
+    Object.values(allVotes).forEach(userVotes => {
+        Object.entries(userVotes).forEach(([nominationId, studentName]) => {
             if (studentName && newResults[nominationId]) {
                 if (!newResults[nominationId][studentName]) {
                     newResults[nominationId][studentName] = 0;
@@ -216,8 +230,6 @@ function initApp() {
     if (savedUser) {
         try {
             currentUser = JSON.parse(savedUser);
-            // Сохраняем информацию о пользователе отдельно для поиска
-            localStorage.setItem('currentUser_' + currentUser.id, savedUser);
             showVotingSection();
         } catch (e) {
             localStorage.removeItem('currentUser');
@@ -271,8 +283,7 @@ function registerUser() {
     };
     
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    // Сохраняем копию для поиска
-    localStorage.setItem('currentUser_' + currentUser.id, JSON.stringify(currentUser));
+    saveUser(currentUser);
     
     showVotingSection();
     showNotification(`Добро пожаловать, ${userName}! Приятного голосования!`, 'success');
@@ -308,7 +319,8 @@ function createNominationCard(nomination) {
         card.classList.add('female-nomination');
     }
     
-    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser?.id}`) || '{}');
+    const allVotes = getAllVotesData();
+    const userVotes = allVotes[currentUser?.id] || {};
     const selectedStudent = userVotes[nomination.id];
     
     card.innerHTML = `
@@ -365,7 +377,8 @@ function openStudentSelection(nominationId) {
     
     studentsGrid.innerHTML = '';
 
-    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser?.id}`) || '{}');
+    const allVotes = getAllVotesData();
+    const userVotes = allVotes[currentUser?.id] || {};
     const currentSelection = userVotes[nominationId];
 
     const filteredStudents = nomination.gender ? 
@@ -456,7 +469,7 @@ function confirmSelection() {
     
     const studentName = selectedCard.querySelector('.student-name').textContent;
     
-    updateUserVote(currentNomination, studentName);
+    saveUserVote(currentUser.id, currentNomination, studentName);
     updateNominationDisplay(currentNomination, studentName);
     updateStats();
     
@@ -465,20 +478,6 @@ function confirmSelection() {
     const modal = document.getElementById('studentModal');
     modal.style.display = 'none';
     currentNomination = null;
-}
-
-function updateUserVote(nominationId, studentName) {
-    if (!currentUser) return;
-    
-    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
-    const previousVote = userVotes[nominationId];
-    
-    // Сохраняем голос пользователя
-    userVotes[nominationId] = studentName;
-    localStorage.setItem(`userVotes_${currentUser.id}`, JSON.stringify(userVotes));
-    
-    // Пересчитываем общие результаты
-    recalculateTotalResults();
 }
 
 function updateNominationDisplay(nominationId, studentName) {
@@ -612,10 +611,10 @@ function showVoteDetails() {
     
     if (!modal || !resultsGrid) return;
     
-    resultsGrid.innerHTML = '<h3 style="text-align: center; margin-bottom: 20px; color: #fff8f0;">Детали голосования</h3>';
+    resultsGrid.innerHTML = '<h3 style="text-align: center; margin-bottom: 20px; color: #fff8f0;">Детали голосования - Все пользователи</h3>';
     
-    // Получаем все голоса всех пользователей
-    const allVotes = getAllUsersVotes();
+    const allVotes = getAllVotesData();
+    const allUsers = getAllUsers();
     
     nominations.forEach(nomination => {
         const resultItem = document.createElement('div');
@@ -629,14 +628,15 @@ function showVoteDetails() {
         let hasVotes = false;
         
         // Собираем голоса для этой номинации
-        Object.values(allVotes).forEach(userData => {
-            if (userData.votes[nomination.id]) {
+        Object.entries(allVotes).forEach(([userId, userVotes]) => {
+            if (userVotes[nomination.id]) {
                 hasVotes = true;
+                const userName = allUsers[userId]?.name || `Пользователь ${userId}`;
                 resultsHTML += `
                     <li>
-                        <span class="student-result-name">${userData.userName}</span>
+                        <span class="student-result-name">${userName}</span>
                         <div class="result-details">
-                            <span style="color: #fff8f0;">→ ${userData.votes[nomination.id]}</span>
+                            <span style="color: #fff8f0;">→ ${userVotes[nomination.id]}</span>
                         </div>
                     </li>
                 `;
@@ -681,15 +681,18 @@ function exportData() {
             });
     });
     
-    const allVotes = getAllUsersVotes();
+    const allVotes = getAllVotesData();
+    const allUsers = getAllUsers();
+    
     csvContent += "\n\nДетали голосования:\n";
     csvContent += "Пользователь,Номинация,Выбранный студент\n";
     
-    Object.values(allVotes).forEach(userData => {
-        Object.entries(userData.votes).forEach(([nominationId, studentName]) => {
+    Object.entries(allVotes).forEach(([userId, userVotes]) => {
+        Object.entries(userVotes).forEach(([nominationId, studentName]) => {
             if (studentName) {
                 const nomination = nominations.find(n => n.id === nominationId);
-                csvContent += `"${userData.userName}","${nomination?.title || nominationId}","${studentName}"\n`;
+                const userName = allUsers[userId]?.name || `Пользователь ${userId}`;
+                csvContent += `"${userName}","${nomination?.title || nominationId}","${studentName}"\n`;
             }
         });
     });
@@ -712,14 +715,17 @@ function resetVoting() {
     if (confirm('ВНИМАНИЕ! Это действие сбросит ВСЕ данные голосования. Продолжить?')) {
         // Удаляем только данные голосования, оставляя текущего пользователя
         const currentUserBackup = localStorage.getItem('currentUser');
-        localStorage.clear();
         
+        // Удаляем только данные голосования
+        localStorage.removeItem(ALL_VOTES_KEY);
+        localStorage.removeItem('votingResults');
+        
+        // Восстанавливаем текущего пользователя
         if (currentUserBackup) {
             localStorage.setItem('currentUser', currentUserBackup);
         }
         
         votingResults = {};
-        allUsersVotes = {};
         
         showNotification('Все данные голосования сброшены!', 'success');
         setTimeout(() => {
@@ -731,7 +737,8 @@ function resetVoting() {
 function updateStats() {
     if (!currentUser) return;
     
-    const userVotes = JSON.parse(localStorage.getItem(`userVotes_${currentUser.id}`) || '{}');
+    const allVotes = getAllVotesData();
+    const userVotes = allVotes[currentUser.id] || {};
     const completedNominations = Object.values(userVotes).filter(v => v).length;
     
     const completedElement = document.getElementById('completedNominations');
